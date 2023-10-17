@@ -13,6 +13,7 @@ import os
 
 def generate_oasis_events_for_h5_path(
     h5_path: Path,
+    expt_id : str,
     out_path: Path,
     trace_key: list = "data",
     estimate_parameters: bool = True,
@@ -25,6 +26,8 @@ def generate_oasis_events_for_h5_path(
     ----------
     h5_path : Path
         Path to h5 file (dff traces h5 from LIMS pipeline)
+    expt_id: str
+        experiment id
     out_path : Path
         Path to save oasis events
     trace_key : list, optional
@@ -66,8 +69,6 @@ def generate_oasis_events_for_h5_path(
 
     try:
         out_path.mkdir(exist_ok=True, parents=True)
-
-        expt_id = int(Path(h5_path).name.split("_")[0])
         oasis_h5 = out_path / f"{expt_id}_events_oasis.h5"
         print(f"Processing {expt_id}")
 
@@ -295,7 +296,12 @@ def main():
     output_dir = make_output_directory(output_dir, experiment_id)
 
     generate_oasis_events_for_h5_path(
-        dff_file, output_dir, trace_type="data", estimate_parameters=True, qc_plot=True
+        dff_file,
+        experiment_id,
+        output_dir, 
+        trace_type="data", 
+        estimate_parameters=True, 
+        qc_plot=True
     )
 
         # print(data.shape)
