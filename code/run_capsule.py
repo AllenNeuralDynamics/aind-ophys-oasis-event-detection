@@ -8,6 +8,8 @@ import seaborn as sns
 import json
 import matplotlib.pyplot as plt
 import argparse
+import os 
+
 
 def generate_oasis_events_for_h5_path(
     h5_path: Path,
