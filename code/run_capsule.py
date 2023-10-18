@@ -291,7 +291,7 @@ def main():
     output_dir = Path(args.output_dir).resolve()
     input_dir = Path(args.input_dir).resolve()
     dff_file = [i for i in list(input_dir.glob('*/*')) if 'dff.h5' in str(i)][0]
-    motion_corrected_fn = [i for i in list(input_dir.glob("*/*")) if "registered.h5" in str(i)][0]
+    motion_corrected_fn = [i for i in list(input_dir.glob("*/*")) if "decrosstalk.h5" in str(i)][0]
     experiment_id = motion_corrected_fn.name.split("_")[0]
     output_dir = make_output_directory(output_dir, experiment_id)
 
