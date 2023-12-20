@@ -3,6 +3,9 @@ FROM registry.codeocean.allenneuraldynamics.org/codeocean/jupyterlab:3.4.4-minic
 
 ARG DEBIAN_FRONTEND=noninteractive
 
+ENV VERSION="0.1.0"
+ENV REPO_URL=https://github.com/AllenNeuralDynamics/aind-ophys-oasis-event-detection
+
 ARG GIT_ASKPASS
 ARG GIT_ACCESS_TOKEN
 COPY git-askpass /

@@ -9,7 +9,61 @@ import json
 import matplotlib.pyplot as plt
 import argparse
 import os 
+from aind_data_schema.core.processing import Processing, DataProcess, ProcessName, PipelineProcess
+from typing import Union
+from datetime import datetime as dt
+from datetime import timezone as tz
 
+
+
+def write_output_metadata(
+    metadata: dict,
+    process_name: str,
+    input_fp: Union[str, Path],
+    output_fp: Union[str, Path],
+    start_date_time: dt,
+) -> None:
+    """Writes output metadata to plane processing.json
+
+    Parameters
+    ----------
+    metadata: dict
+        parameters from suite2p motion correction
+    input_fp: str
+        path to data input
+    output_fp: str
+        path to data output
+    """
+    processing = Processing(
+        processing_pipeline=PipelineProcess(
+            processor_full_name="Multplane Ophys Processing Pipeline",
+            pipeline_url="https://codeocean.allenneuraldynamics.org/capsule/5472403/tree",
+            pipeline_version="0.1.0",
+            data_processes=[
+                DataProcess(
+                    name=process_name,
+                    software_version=os.getenv("COMMIT_SHA"),
+                    start_date_time=start_date_time,  # TODO: Add actual dt
+                    end_date_time=dt.now(tz.utc),  # TODO: Add actual dt
+                    input_location=str(input_fp),
+                    output_location=str(output_fp),
+                    code_url=(os.getenv("REPO_URL")),
+                    parameters=metadata,
+                )
+            ],
+        )
+    )
+    print(f"Output filepath: {output_fp}")
+    with open(Path(output_fp).parent.parent / "processing.json", "r") as f:
+        proc_data = json.load(f)
+    processing.write_standard_file(output_directory=Path(output_fp).parent.parent)
+    with open(Path(output_fp).parent.parent / "processing.json", "r") as f:
+        dct_data = json.load(f)
+    proc_data["processing_pipeline"]["data_processes"].append(
+        dct_data["processing_pipeline"]["data_processes"][0]
+    )
+    with open(Path(output_fp).parent.parent / "processing.json", "w") as f:
+        json.dump(proc_data, f, indent=4)
 
 def generate_oasis_events_for_h5_path(
     h5_path: Path,
@@ -51,7 +105,8 @@ def generate_oasis_events_for_h5_path(
 
     Returns
     -------
-    None
+    oasis_h5 : Path
+        Path to oasis events h5
 
     """
 
@@ -129,7 +184,7 @@ def generate_oasis_events_for_h5_path(
     except Exception as e:
         logging.error(f"FAILED: {expt_id}")
         raise e
-
+    return oasis_h5
 
 def plot_trace_and_events_png(
     traces, spikes, timestamps, roi_ids, params, plots_path, show_fig=False
@@ -288,6 +343,7 @@ def main():
     parser.add_argument("-i", "--input-dir", type=str, help="Input directory", default="../data/")
     parser.add_argument("-o", "--output-dir", type=str, help="Output directory", default="../results/")
     args = parser.parse_args()
+    start_time = dt.now(tz.utc)
     output_dir = Path(args.output_dir).resolve()
     input_dir = Path(args.input_dir).resolve()
     dff_file = [i for i in list(input_dir.glob('*/*')) if 'dff.h5' in str(i)][0]
@@ -295,7 +351,7 @@ def main():
     experiment_id = motion_corrected_fn.name.split("_")[0]
     output_dir = make_output_directory(output_dir, experiment_id)
 
-    generate_oasis_events_for_h5_path(
+    oasis_h5 = generate_oasis_events_for_h5_path(
         dff_file,
         experiment_id,
         output_dir, 
@@ -304,7 +360,13 @@ def main():
         qc_plot=True
     )
 
-        # print(data.shape)
+    write_output_metadata(
+        {},
+        ProcessName.FLUORESCENCE_EVENT_DETECTION,
+        str(dff_file),
+        str(oasis_h5),
+        start_time,
+    )
 
 
 if __name__ == "__main__":
