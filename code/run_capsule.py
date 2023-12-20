@@ -13,7 +13,7 @@ from aind_data_schema.core.processing import Processing, DataProcess, ProcessNam
 from typing import Union
 from datetime import datetime as dt
 from datetime import timezone as tz
-
+import shutil
 
 
 def write_output_metadata(
@@ -42,7 +42,7 @@ def write_output_metadata(
             data_processes=[
                 DataProcess(
                     name=process_name,
-                    software_version=os.getenv("COMMIT_SHA"),
+                    software_version=os.getenv("VERSION"),
                     start_date_time=start_date_time,  # TODO: Add actual dt
                     end_date_time=dt.now(tz.utc),  # TODO: Add actual dt
                     input_location=str(input_fp),
@@ -317,27 +317,27 @@ def oasis_deconvolve(traces, params: dict, estimate_parameters: bool = True, **k
 
     return np.array(spikes), params
 
-def make_output_directory(output_dir: str, experiment_id: str=None) -> str:
+def make_output_directory(output_dir: Path, experiment_id: str) -> str:
     """Creates the output directory if it does not exist
-    
+
     Parameters
     ----------
-    output_dir: str
+    output_dir: Path
         output directory
     experiment_id: str
         experiment_id number
-    
+
     Returns
     -------
     output_dir: str
         output directory
     """
-    if experiment_id:
-        output_dir = os.path.join(output_dir, experiment_id)
-    else:
-        output_dir = os.path.join(output_dir)
-    os.makedirs(output_dir, exist_ok=True)
-    return Path(output_dir)
+    output_dir = output_dir / experiment_id
+    output_dir.mkdir(exist_ok=True)
+    output_dir = output_dir / "events"
+    output_dir.mkdir(exist_ok=True)
+
+    return output_dir
 
 def main():
     parser = argparse.ArgumentParser()
@@ -347,11 +347,12 @@ def main():
     start_time = dt.now(tz.utc)
     output_dir = Path(args.output_dir).resolve()
     input_dir = Path(args.input_dir).resolve()
-    dff_file = [i for i in list(input_dir.glob('*/*')) if 'dff.h5' in str(i)][0]
-    motion_corrected_fn = [i for i in list(input_dir.glob("*/*")) if "decrosstalk.h5" in str(i)][0]
+    dff_file = next(input_dir.glob('*/dff/dff.h5'))
+    motion_corrected_fn = next(input_dir.glob("*/decrosstalk/*decrosstalk.h5"))
     experiment_id = motion_corrected_fn.name.split("_")[0]
     output_dir = make_output_directory(output_dir, experiment_id)
-
+    process_json = next(input_dir.glob("*/processing.json"))
+    shutil.copy(process_json, output_dir.parent)
     oasis_h5, params = generate_oasis_events_for_h5_path(
         dff_file,
         experiment_id,
@@ -362,7 +363,7 @@ def main():
     )
 
     write_output_metadata(
-        {},
+        params,
         ProcessName.FLUORESCENCE_EVENT_DETECTION,
         str(dff_file),
         str(oasis_h5),
