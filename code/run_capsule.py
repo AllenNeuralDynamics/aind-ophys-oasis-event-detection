@@ -13,7 +13,7 @@ from aind_data_schema.core.processing import Processing, DataProcess, ProcessNam
 from typing import Union
 from datetime import datetime as dt
 from datetime import timezone as tz
-
+import shutil
 
 
 def write_output_metadata(
