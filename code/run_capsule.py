@@ -316,27 +316,27 @@ def oasis_deconvolve(traces, params: dict, estimate_parameters: bool = True, **k
 
     return np.array(spikes), params
 
-def make_output_directory(output_dir: str, experiment_id: str=None) -> str:
+def make_output_directory(output_dir: Path, experiment_id: str) -> str:
     """Creates the output directory if it does not exist
-    
+
     Parameters
     ----------
-    output_dir: str
+    output_dir: Path
         output directory
     experiment_id: str
         experiment_id number
-    
+
     Returns
     -------
     output_dir: str
         output directory
     """
-    if experiment_id:
-        output_dir = os.path.join(output_dir, experiment_id)
-    else:
-        output_dir = os.path.join(output_dir)
-    os.makedirs(output_dir, exist_ok=True)
-    return Path(output_dir)
+    output_dir = output_dir / experiment_id
+    output_dir.mkdir(exist_ok=True)
+    output_dir = output_dir / "events"
+    output_dir.mkdir(exist_ok=True)
+
+    return output_dir
 
 def main():
     parser = argparse.ArgumentParser()
@@ -350,7 +350,8 @@ def main():
     motion_corrected_fn = next(input_dir.glob("*/decrosstalk/*decrosstalk.h5"))
     experiment_id = motion_corrected_fn.name.split("_")[0]
     output_dir = make_output_directory(output_dir, experiment_id)
-
+    process_json = next(input_dir.glob("*/processing.json"))
+    shutil.copy(process_json, output_dir.parent)
     oasis_h5 = generate_oasis_events_for_h5_path(
         dff_file,
         experiment_id,
