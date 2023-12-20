@@ -107,7 +107,8 @@ def generate_oasis_events_for_h5_path(
     -------
     oasis_h5 : Path
         Path to oasis events h5
-
+    params: dict
+        Dictionary of parameters used for oasis
     """
 
     # DEFAULT PARAMS
@@ -184,7 +185,7 @@ def generate_oasis_events_for_h5_path(
     except Exception as e:
         logging.error(f"FAILED: {expt_id}")
         raise e
-    return oasis_h5
+    return oasis_h5, params
 
 def plot_trace_and_events_png(
     traces, spikes, timestamps, roi_ids, params, plots_path, show_fig=False
@@ -351,7 +352,7 @@ def main():
     experiment_id = motion_corrected_fn.name.split("_")[0]
     output_dir = make_output_directory(output_dir, experiment_id)
 
-    oasis_h5 = generate_oasis_events_for_h5_path(
+    oasis_h5, params = generate_oasis_events_for_h5_path(
         dff_file,
         experiment_id,
         output_dir, 
