@@ -42,7 +42,7 @@ def write_output_metadata(
             data_processes=[
                 DataProcess(
                     name=process_name,
-                    software_version=os.getenv("COMMIT_SHA"),
+                    software_version=os.getenv("VERSION"),
                     start_date_time=start_date_time,  # TODO: Add actual dt
                     end_date_time=dt.now(tz.utc),  # TODO: Add actual dt
                     input_location=str(input_fp),
@@ -346,8 +346,8 @@ def main():
     start_time = dt.now(tz.utc)
     output_dir = Path(args.output_dir).resolve()
     input_dir = Path(args.input_dir).resolve()
-    dff_file = [i for i in list(input_dir.glob('*/*')) if 'dff.h5' in str(i)][0]
-    motion_corrected_fn = [i for i in list(input_dir.glob("*/*")) if "decrosstalk.h5" in str(i)][0]
+    dff_file = next(input_dir.glob('*/dff/dff.h5'))
+    motion_corrected_fn = next(input_dir.glob("*/decrosstalk/*decrosstalk.h5"))
     experiment_id = motion_corrected_fn.name.split("_")[0]
     output_dir = make_output_directory(output_dir, experiment_id)
 
