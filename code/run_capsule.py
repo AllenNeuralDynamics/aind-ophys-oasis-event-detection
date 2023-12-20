@@ -362,7 +362,7 @@ def main():
     )
 
     write_output_metadata(
-        {},
+        params,
         ProcessName.FLUORESCENCE_EVENT_DETECTION,
         str(dff_file),
         str(oasis_h5),
