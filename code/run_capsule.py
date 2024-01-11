@@ -343,16 +343,25 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--input-dir", type=str, help="Input directory", default="../data/")
     parser.add_argument("-o", "--output-dir", type=str, help="Output directory", default="../results/")
+    parser.add_argument("-m", "--multiplane", type=bool, help="Multiplane data", default=False)
+
     args = parser.parse_args()
     start_time = dt.now(tz.utc)
     output_dir = Path(args.output_dir).resolve()
     input_dir = Path(args.input_dir).resolve()
     dff_file = next(input_dir.glob('*/dff/dff.h5'))
-    motion_corrected_fn = next(input_dir.glob("*/decrosstalk/*decrosstalk.h5"))
+    multiplane = args.multiplane
+    if multiplane:
+        motion_corrected_fn = next(input_dir.glob("*/decrosstalk/*decrosstalk.h5"))
+    else:
+        motion_corrected_fn = next(input_dir.glob("*/motion_corrected/*registered.h5"))
     experiment_id = motion_corrected_fn.name.split("_")[0]
     output_dir = make_output_directory(output_dir, experiment_id)
-    process_json = next(input_dir.glob("*/processing.json"))
-    shutil.copy(process_json, output_dir.parent)
+    for file in input_dir.glob("*/*.json"):
+        shutil.copy(file, output_dir.parent)
+    for directory in input_dir.glob("*/*"):
+        if directory.is_dir():
+            shutil.copytree(directory, Path(output_dir.parent) / directory.name)
     oasis_h5, params = generate_oasis_events_for_h5_path(
         dff_file,
         experiment_id,
