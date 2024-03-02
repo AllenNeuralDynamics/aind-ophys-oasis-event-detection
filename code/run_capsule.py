@@ -69,6 +69,7 @@ def generate_oasis_events_for_h5_path(
     h5_path: Path,
     expt_id : str,
     out_path: Path,
+    ophys_frame_rate: float,
     trace_key: list = "data",
     estimate_parameters: bool = True,
     qc_plot: bool = True,
@@ -145,7 +146,6 @@ def generate_oasis_events_for_h5_path(
         # rate, timestamp_df = get_correct_frame_rate(expt_id)
         # timestamps = timestamp_df.ophys_frames.values[0]
 
-        ophys_frame_rate = 10.7  # hardcoded in CO since we dont have LIMS or new pipline
         timestamps = (
             np.arange(traces.shape[1]) * 1 / ophys_frame_rate
         )  # dummy CO since we dont have LIMS or new pipline
@@ -351,12 +351,18 @@ def main():
     motion_corrected_fn = next(input_dir.glob("*/decrosstalk/*decrosstalk.h5"))
     experiment_id = motion_corrected_fn.name.split("_")[0]
     output_dir = make_output_directory(output_dir, experiment_id)
-    process_json = next(input_dir.glob("*/processing.json"))
-    shutil.copy(process_json, output_dir.parent)
+    process_json_fp = next(input_dir.glob("*/processing.json"))
+    with open(process_json_fp, "r") as f:
+        process_json= json.load(f)
+    for data_process in process_json["processing_pipeline"]["data_processes"]:
+        if data_process["name"] == "Videeo motion correction":
+            frame_rate = data_process["parameters"]["movie_frame_rate_hz"]
+    shutil.copy(process_json_fp, output_dir.parent)
     oasis_h5, params = generate_oasis_events_for_h5_path(
         dff_file,
         experiment_id,
-        output_dir, 
+        output_dir,
+        frame_rate,
         trace_type="data", 
         estimate_parameters=True, 
         qc_plot=True
