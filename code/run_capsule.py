@@ -347,9 +347,9 @@ def main():
     start_time = dt.now(tz.utc)
     output_dir = Path(args.output_dir).resolve()
     input_dir = Path(args.input_dir).resolve()
-    dff_file = next(input_dir.glob('*/dff/dff.h5'))
-    motion_corrected_fn = next(input_dir.glob("*/decrosstalk/*decrosstalk.h5"))
-    experiment_id = motion_corrected_fn.name.split("_")[0]
+    dff_dir = next(input_dir.glob("*/dff"))
+    experiment_id = dff_dir.parent.name
+    dff_file = next(dff_dir.glob('dff.h5'))
     output_dir = make_output_directory(output_dir, experiment_id)
     process_json = next(input_dir.glob("*/processing.json"))
     shutil.copy(process_json, output_dir.parent)
