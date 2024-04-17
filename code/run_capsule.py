@@ -355,7 +355,7 @@ def main():
     with open(process_json_fp, "r") as f:
         process_json= json.load(f)
     for data_process in process_json["processing_pipeline"]["data_processes"]:
-        if data_process["name"] == "Videeo motion correction":
+        if data_process["name"] == "Video motion correction":
             frame_rate = data_process["parameters"]["movie_frame_rate_hz"]
     shutil.copy(process_json_fp, output_dir.parent)
     oasis_h5, params = generate_oasis_events_for_h5_path(
