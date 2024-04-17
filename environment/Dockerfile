@@ -10,6 +10,9 @@ ARG GIT_ASKPASS
 ARG GIT_ACCESS_TOKEN
 COPY git-askpass /
 
+RUN ["apt-get", "update"]
+RUN ["apt-get", "install", "-y", "vim"]
+
 RUN pip install -U --no-cache-dir \
     h5py==3.9.0 \
     numpy==1.25.1 \
