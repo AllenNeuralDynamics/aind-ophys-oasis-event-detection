@@ -18,6 +18,7 @@ import shutil
 
 def write_output_metadata(
     metadata: dict,
+    process_json_dir: str,
     process_name: str,
     input_fp: Union[str, Path],
     output_fp: Union[str, Path],
@@ -34,36 +35,32 @@ def write_output_metadata(
     output_fp: str
         path to data output
     """
+    with open(Path(process_json_dir) / "processing.json", "r") as f:
+        proc_data = json.load(f)
     processing = Processing(
         processing_pipeline=PipelineProcess(
             processor_full_name="Multplane Ophys Processing Pipeline",
             pipeline_url="https://codeocean.allenneuraldynamics.org/capsule/5472403/tree",
-            pipeline_version="0.1.0",
+            pipeline_version="0.3.0",
             data_processes=[
                 DataProcess(
                     name=process_name,
-                    software_version=os.getenv("VERSION"),
-                    start_date_time=start_date_time,  # TODO: Add actual dt
-                    end_date_time=dt.now(tz.utc),  # TODO: Add actual dt
+                    software_version=os.getenv("VERSION"), #TODO: FIX THIS!!
+                    start_date_time=start_date_time,
+                    end_date_time=dt.now(tz.utc),
                     input_location=str(input_fp),
-                    output_location=str(output_fp),
-                    code_url=(os.getenv("REPO_URL")),
+                    output_location=output_fp,
+                    code_url=os.getenv("REPO_URL"),
                     parameters=metadata,
                 )
             ],
         )
     )
-    print(f"Output filepath: {output_fp}")
-    with open(Path(output_fp).parent.parent / "processing.json", "r") as f:
-        proc_data = json.load(f)
-    processing.write_standard_file(output_directory=Path(output_fp).parent.parent)
-    with open(Path(output_fp).parent.parent / "processing.json", "r") as f:
-        dct_data = json.load(f)
-    proc_data["processing_pipeline"]["data_processes"].append(
-        dct_data["processing_pipeline"]["data_processes"][0]
+    prev_processing = Processing(**proc_data)
+    prev_processing.processing_pipeline.data_processes.append(
+        processing.processing_pipeline.data_processes[0]
     )
-    with open(Path(output_fp).parent.parent / "processing.json", "w") as f:
-        json.dump(proc_data, f, indent=4)
+    prev_processing.write_standard_file(output_directory=Path(output_fp).parent)
 
 def generate_oasis_events_for_h5_path(
     h5_path: Path,
@@ -347,17 +344,16 @@ def main():
     start_time = dt.now(tz.utc)
     output_dir = Path(args.output_dir).resolve()
     input_dir = Path(args.input_dir).resolve()
-    dff_file = next(input_dir.glob('*/dff/dff.h5'))
-    motion_corrected_fn = next(input_dir.glob("*/decrosstalk/*decrosstalk.h5"))
-    experiment_id = motion_corrected_fn.name.split("_")[0]
+    dff_dir = next(input_dir.glob("*/dff"))
+    experiment_id = dff_dir.parent.name
+    dff_file = next(dff_dir.glob('dff.h5'))
     output_dir = make_output_directory(output_dir, experiment_id)
-    process_json_fp = next(input_dir.glob("*/processing.json"))
+    process_json_fp = dff_file.parent / "processing.json"
     with open(process_json_fp, "r") as f:
         process_json= json.load(f)
     for data_process in process_json["processing_pipeline"]["data_processes"]:
-        if data_process["name"] == "Videeo motion correction":
+        if data_process["name"] == "Video motion correction":
             frame_rate = data_process["parameters"]["movie_frame_rate_hz"]
-    shutil.copy(process_json_fp, output_dir.parent)
     oasis_h5, params = generate_oasis_events_for_h5_path(
         dff_file,
         experiment_id,
@@ -370,6 +366,7 @@ def main():
 
     write_output_metadata(
         params,
+        dff_file.parent,
         ProcessName.FLUORESCENCE_EVENT_DETECTION,
         str(dff_file),
         str(oasis_h5),
