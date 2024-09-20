@@ -225,10 +225,10 @@ if __name__ == "__main__":
                 return deconvolve(t, **relevant_params)
             elif args.tau_rise == 0:
                 return (oasisAR1_f32 if t.dtype == np.float32 else oasisAR1)(
-                    t, args.g[0], s_min=args.s_min, lam=args.lam
+                    t - params["b"], args.g[0], s_min=args.s_min, lam=args.lam
                 )
             else:
-                return oasisAR2(t.astype(float), args.g[0], args.g[1], s_min=args.s_min, lam=args.lam)
+                return oasisAR2(t.astype(float) - params["b"], args.g[0], args.g[1], s_min=args.s_min, lam=args.lam)
 
     try:
         print(f"Performing Event Detection for {experiment_id}")
