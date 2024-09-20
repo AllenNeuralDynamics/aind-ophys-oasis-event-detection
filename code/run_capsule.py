@@ -1,19 +1,20 @@
-""" pulled from matt davis' mjd_oasis_simple capsule """
-import numpy as np
-import h5py
-from oasis.functions import deconvolve
-from pathlib import Path
-import logging
-import seaborn as sns
-import json
-import matplotlib.pyplot as plt
 import argparse
-import os 
-from aind_data_schema.core.processing import Processing, DataProcess, ProcessName, PipelineProcess
-from typing import Union
+import json
+import logging
+import os
 from datetime import datetime as dt
 from datetime import timezone as tz
-import shutil
+from multiprocessing.pool import Pool
+from pathlib import Path
+from typing import Union
+
+import h5py
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
+from aind_data_schema.core.processing import DataProcess, PipelineProcess, Processing, ProcessName
+from oasis.functions import deconvolve
+from oasis.oasis_methods import oasisAR1, oasisAR1_f32, oasisAR2
 
 
 def write_output_metadata(
@@ -41,15 +42,15 @@ def write_output_metadata(
         processing_pipeline=PipelineProcess(
             processor_full_name="Multplane Ophys Processing Pipeline",
             pipeline_url="https://codeocean.allenneuraldynamics.org/capsule/5472403/tree",
-            pipeline_version="0.3.0",
+            pipeline_version="0.5.0",
             data_processes=[
                 DataProcess(
                     name=process_name,
-                    software_version=os.getenv("VERSION"), #TODO: FIX THIS!!
+                    software_version=os.getenv("VERSION"),  # TODO: FIX THIS!!
                     start_date_time=start_date_time,
                     end_date_time=dt.now(tz.utc),
                     input_location=str(input_fp),
-                    output_location=output_fp,
+                    output_location=str(output_fp),
                     code_url=os.getenv("REPO_URL"),
                     parameters=metadata,
                 )
@@ -57,264 +58,11 @@ def write_output_metadata(
         )
     )
     prev_processing = Processing(**proc_data)
-    prev_processing.processing_pipeline.data_processes.append(
-        processing.processing_pipeline.data_processes[0]
-    )
+    prev_processing.processing_pipeline.data_processes.append(processing.processing_pipeline.data_processes[0])
     prev_processing.write_standard_file(output_directory=Path(output_fp).parent)
 
-def generate_oasis_events_for_h5_path(
-    h5_path: Path,
-    expt_id : str,
-    out_path: Path,
-    ophys_frame_rate: float,
-    trace_key: list = "data",
-    estimate_parameters: bool = True,
-    qc_plot: bool = True,
-    **kwargs,
-) -> None:
-    """Generate oasis events for all traces in pipe_dev dff folder
 
-    Parameters
-    ----------
-    h5_path : Path
-        Path to h5 file (dff traces h5 from LIMS pipeline)
-    expt_id: str
-        experiment id
-    out_path : Path
-        Path to save oasis events
-    trace_key : list, optional
-        usually "data"
-    estimate_parameters : bool, optional
-        Whether to estimate parameters (CONSTRAINED AR1)
-        or use provided parameters (UNCONSTRAINED AR1)
-    qc_plot: bool,
-        create qc plot of events
-    **kwargs : dict
-        UNCONSTRAINED AR1 kwargs
-        + tau
-        + rate
-        + s_min
-        CONSTRAINED AR1 kwargs
-        + optimize_g
-        + penalty
-        + g (optimized)
-        + sn (optimized)
-        + b (optimized)
-
-    Returns
-    -------
-    oasis_h5 : Path
-        Path to oasis events h5
-    params: dict
-        Dictionary of parameters used for oasis
-    """
-
-    # DEFAULT PARAMS
-    # TODO: make these as inputs
-    params = {}
-    params["g"] = (None,)
-    params["b"] = None
-    params["sn"] = None
-    params["optimize_g"] = 0
-    params["penalty"] = 1
-    params["b_nonneg"] = True
-    params["estimate_parameters"] = estimate_parameters
-    params["method"] = "constrained_oasisAR1" if estimate_parameters else "unconstrained_oasisAR1"
-
-    try:
-        out_path.mkdir(exist_ok=True, parents=True)
-        oasis_h5 = out_path / f"{expt_id}_events_oasis.h5"
-        print(f"Processing {expt_id}")
-
-        # cehck if oasis h5 exists
-        if oasis_h5.exists():
-            print(f"{oasis_h5} already exists")
-            return
-
-        with h5py.File(h5_path, "r") as f:
-            traces = f["data"][:]
-            roi_ids = f["roi_names"][:]
-
-        # remove all nans
-        nan_inds = ~np.isnan(traces).any(axis=1)
-        traces = traces[nan_inds, :]
-        roi_ids = roi_ids[nan_inds]
-
-        # rate, timestamp_df = get_correct_frame_rate(expt_id)
-        # timestamps = timestamp_df.ophys_frames.values[0]
-
-        timestamps = (
-            np.arange(traces.shape[1]) * 1 / ophys_frame_rate
-        )  # dummy CO since we dont have LIMS or new pipline
-
-        params["rate"] = ophys_frame_rate
-
-        # traces, n_nan_list = quick_fix_nans(traces)
-        # # warn that some traces have nans
-        # if len(n_nan_list) > 0:
-        #     print(f"WARNING: {len(n_nan_list)} traces have nans")
-
-        nans = np.where(np.isnan(traces))[0]
-        if len(nans) > 0:
-            raise ValueError(f"Traces have nans: {len(nans)} in {expt_id}")
-
-        spikes, params = oasis_deconvolve(traces, params, estimate_parameters)
-
-        # save to h5
-        with h5py.File(oasis_h5, "w") as file:
-            file.create_dataset("cell_roi_id", data=roi_ids)
-            file.create_dataset("events", data=spikes)
-
-        if qc_plot:
-            plots_path = out_path / "plots"
-            plots_path.mkdir(exist_ok=True, parents=True)
-            plot_trace_and_events_png(traces, spikes, timestamps, roi_ids, params, plots_path)
-
-        params["events_path"] = str(oasis_h5)
-        params["trace_key"] = trace_key
-        # params['n_nans'] = n_nan_list
-
-        # dump params to json
-        with open(out_path / f"{expt_id}_params.json", "w") as file:
-            json.dump(params, file)
-
-        logging.info(f"SUCCESS: {expt_id}")
-    except Exception as e:
-        logging.error(f"FAILED: {expt_id}")
-        raise e
-    return oasis_h5, params
-
-def plot_trace_and_events_png(
-    traces, spikes, timestamps, roi_ids, params, plots_path, show_fig=False
-):
-    sns.set_context("talk")
-    for i, (spike, trace, cell) in enumerate(zip(spikes, traces, roi_ids)):
-        fig, ax = plt.subplots(1, 1, figsize=(20, 5))
-        ax.plot(timestamps, trace, color="g", label="new_dff")
-
-        if params["estimate_parameters"]:
-            g = params["g_hat"][i]
-        else:
-            g = params["g"]
-        ax2 = ax.twinx()
-        ax2.plot(timestamps, spike * 1, color="orange", label=f"events, g={g}")
-
-        # xlim
-        ax.set_xlim(400, 580)
-        ax2.set_xlim(400, 580)  # arbitrary time period to check
-        ax.legend()
-        ax2.legend()
-        cell = str(cell)
-        ax.set_title(f"cell_roi_id: {cell}")
-        fig.savefig(plots_path / f"{cell}_oasis.png")
-        if not show_fig:
-            plt.close(fig)
-
-
-def oasis_deconvolve(traces, params: dict, estimate_parameters: bool = True, **kwargs) -> np.array:
-    """Deconvolve traces for for all cells in a trace array
-
-    Parameters
-    ----------
-    traces : np.array
-        Array of traces, shape (n_cells, n_frames)
-    params : dict
-        Dictionary of parameters for oasis
-    estimate_parameters : bool, optional
-        Whether to estimate parameters, by default True
-    **kwargs : dict
-        Additional arguments to pass to oasisAR1
-
-    Returns
-    -------
-    spikes : np.array
-        Array of spikes, shape (n_cells, n_frames)
-
-    Notes
-    -----
-    + See OASIS repo for more parameters
-
-    estimate_parameters=True
-    ------------------------
-    + penalty: (sparsity penalty) 1: min |s|_1  0: min |s|_0
-    + g
-    + sn
-    + b
-    + b_nonneg
-    + optimize_g: number of large, isolated events to FURTHER optimize g
-    + kwargs
-
-    estimate_parameters=False
-    -------------------------
-    + tau
-    + rate
-    + s_min
-
-    """
-    if estimate_parameters:
-        # check params for required keys
-        required_keys = ["g", "sn", "b", "b_nonneg", "optimize_g", "penalty"]
-        for key in required_keys:
-            if key not in params:
-                raise UserWarning(f"params must contain {key}")
-
-    elif not estimate_parameters:
-        # check params for required keys
-        required_keys = ["tau", "rate", "s_min"]
-        for key in required_keys:
-            if key not in params:
-                raise UserWarning(f"params must contain {key}")
-
-        g = np.exp(-1 / (params["tau"] * params["rate"]))
-        lam = 0
-
-        params["g"] = g
-        params["lam"] = lam
-
-    # run oasis on each trace
-    spikes = []
-    calcium = []
-    baseline = []
-    g_hat = []
-    lam_hat = []
-    for t in traces:
-        # check if trace has any nans, if so return all nans
-        if np.isnan(t).any():
-            spikes.append(np.full_like(t, np.nan))
-        else:
-            if estimate_parameters:
-                c, s, b, g, lam = deconvolve(
-                    t,
-                    g=params["g"],
-                    sn=params["sn"],
-                    b=params["b"],
-                    b_nonneg=params["b_nonneg"],
-                    optimize_g=params["optimize_g"],
-                    penalty=params["penalty"],
-                    **kwargs,
-                )
-                g_hat.append(g)  # Note using AR1, so only need the first param
-                lam_hat.append(lam)
-
-                spikes.append(s)
-                calcium.append(c)
-                baseline.append(b)
-            else:
-                # c: inferred calcium, s: inferred spikes
-                c, s = oasisAR1(t, params["g"], s_min=params["s_min"], lam=params["lam"])
-                spikes.append(s)
-                calcium.append(c)
-    if estimate_parameters:
-        # AR1, so just list of g, if need Ar2, need to account for tuple in json dump
-        params["g_hat"] = g_hat
-        params["lam_hat"] = lam_hat
-
-    # smoothing
-    # y = np.convolve(y, np.ones(3)/3, mode='same')
-
-    return np.array(spikes), params
-
-def make_output_directory(output_dir: Path, experiment_id: str) -> str:
+def make_output_directory(output_dir: Path, experiment_id: str) -> Path:
     """Creates the output directory if it does not exist
 
     Parameters
@@ -326,7 +74,7 @@ def make_output_directory(output_dir: Path, experiment_id: str) -> str:
 
     Returns
     -------
-    output_dir: str
+    output_dir: Path
         output directory
     """
     output_dir = output_dir / experiment_id
@@ -336,43 +84,225 @@ def make_output_directory(output_dir: Path, experiment_id: str) -> str:
 
     return output_dir
 
-def main():
+
+def plot_trace_and_events_png(trace, ca, spike, timestamps, roi_id, tau, plots_path, show_fig=False) -> None:
+    sns.set_context("talk")
+    fig, ax = plt.subplots(2, 1, figsize=(20, 5), sharex=True)
+    ax[0].plot(timestamps, 100 * trace, color="C0", label=r"raw $\Delta$F/F")
+    ax[0].plot(timestamps, 100 * ca, color="C1", label="denoised")
+    end = min(580, timestamps[-1])  # arbitrary time period to check
+    ax[0].set_xlim(max(0, end - 180), end)
+    ax[0].legend()
+    ax[0].set_ylabel(r"$\Delta$F/F [%]")
+    ax[0].set_title(f"cell_roi_id: {roi_id}")
+    ax[1].plot(timestamps, spike, color="C2", label=f"events, tau={tau:.4f}s")
+    ax[1].legend()
+    ax[1].set_xlabel("Time [s]")
+    ax[1].set_ylabel("Spike rate [a.u.]")
+    plt.tight_layout(pad=0.2)
+    fig.savefig(plots_path / f"{roi_id}_oasis.png")
+    if not show_fig:
+        plt.close(fig)
+
+
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input-dir", type=str, help="Input directory", default="../data/")
-    parser.add_argument("-o", "--output-dir", type=str, help="Output directory", default="../results/")
+    parser.add_argument("-i", "--input-dir", type=str, default="../data/", help="Input directory")
+    parser.add_argument("-o", "--output-dir", type=str, default="../results/", help="Output directory")
+    parser.add_argument(
+        "--estimate_parameters",
+        type=bool,
+        default=True,
+        help="Whether to estimate parameters, in particular sparsity parameter lam, "
+        "using the noise constraint or whether to use provided parameters.",
+    )
+    parser.add_argument(
+        "--tau",
+        type=float,
+        default=None,
+        help="Exponential decay time in seconds (1/e, thus equal to half-life time divided by ln(2)). "
+        "Estimated from the autocovariance of the data if no value is given. "
+        "Has to be provided explicitly if estimate_parameters==False",
+    )
+    parser.add_argument(
+        "--tau_rise",
+        type=float,
+        default=0,
+        help="Exponential rise time in seconds (1/e, thus equal to half-rise time divided by ln(2)). "
+        "Estimated from the autocovariance of the data if no value is given.",
+    )
+    parser.add_argument(
+        "--optimize_tau",
+        type=int,
+        default=0,
+        help="Number of large, isolated events to consider for further optimizing tau. "
+        "No optimization if optimize_tau=0.",
+    )
+    parser.add_argument(
+        "--b",
+        type=float,
+        default=None,
+        help="Fluorescence baseline value. If no value is given, "
+        "then b is optimized if estimate_parameters==True else 0.",
+    )
+    parser.add_argument("--b_nonneg", type=bool, default=True, help="Enforce strictly non-negative baseline if True")
+    parser.add_argument(
+        "--sn",
+        type=float,
+        default=None,
+        help="Standard deviation of the noise distribution. If no value is given, "
+        "then sn is estimated from the data based on power spectral density.",
+    )
+    parser.add_argument("--penalty", type=int, default=1, help="Sparsity penalty. 1: min |s|_1  0: min |s|_0")
+    parser.add_argument(
+        "--lam",
+        type=float,
+        default=None,
+        help="Sparsity penalty parameter. If no value is given, then lam is "
+        "estimated as the optimal Lagrange multiplier for noise constraint "
+        "under L1 penalty if estimate_parameters==True else 0",
+    )
+    parser.add_argument(
+        "--s_min", type=float, default=0, help="Minimal non-zero activity within each bin (minimal 'spike size')."
+    )
+    parser.add_argument("--no_qc", action="store_true", help="Skip QC plots.")
     args = parser.parse_args()
+    params = vars(args)
+
     start_time = dt.now(tz.utc)
     output_dir = Path(args.output_dir).resolve()
     input_dir = Path(args.input_dir).resolve()
     dff_dir = next(input_dir.glob("*/dff"))
     experiment_id = dff_dir.parent.name
-    dff_file = next(dff_dir.glob('dff.h5'))
+    dff_fp = next(dff_dir.glob("dff.h5"))
     output_dir = make_output_directory(output_dir, experiment_id)
-    process_json_fp = dff_file.parent / "processing.json"
+    process_json_fp = dff_dir / "processing.json"
     with open(process_json_fp, "r") as f:
-        process_json= json.load(f)
+        process_json = json.load(f)
     for data_process in process_json["processing_pipeline"]["data_processes"]:
         if data_process["name"] == "Video motion correction":
             frame_rate = data_process["parameters"]["movie_frame_rate_hz"]
-    oasis_h5, params = generate_oasis_events_for_h5_path(
-        dff_file,
-        experiment_id,
-        output_dir,
-        frame_rate,
-        trace_type="data", 
-        estimate_parameters=True, 
-        qc_plot=True
-    )
+
+    # convert time constants to parameters of the auto-regressive (AR) process
+    if args.tau is None or args.tau_rise is None:  # automatically estimate tau
+        if args.tau_rise == 0:  # negligible rise time -> AR1
+            params["g"] = (None,)
+        else:  # automatically estimate rise time too -> AR2
+            params["g"] = (None, None)
+    else:
+        if args.tau_rise == 0:  # negligible rise time -> AR1
+            params["g"] = (np.exp(-1 / (args.tau * frame_rate)),)
+        else:  # AR2
+            d, r = (np.exp(-1 / (args.tau * frame_rate)), np.exp(-1 / (args.tau_rise * frame_rate)))
+            params["g"] = (d + r, -d * r)
+
+    if not args.estimate_parameters:
+        if args.tau is None:
+            raise UserWarning(
+                "'estimate_parameters' is False, but no value for decay time constant 'tau' has been provided."
+            )
+        if args.lam is None:
+            params["lam"] = 0
+            logging.info(
+                "'estimate_parameters' is False, but no value for sparsity penalty 'lam' has been provided, "
+                "thus automatically setting 'lam' to 0."
+            )
+        if args.b is None:
+            params["b"] = 0
+            logging.info(
+                "'estimate_parameters' is False, but no value for baseline 'b' has been provided, "
+                "thus automatically setting 'b' to 0."
+            )
+
+    def _deconv(t):
+        if np.isnan(t).any():  # check if trace has any nans, if so return all nans
+            c, s = np.full_like(t, np.nan), np.full_like(t, np.nan)
+            return (c, s, np.nan, np.nan, np.nan) if args.estimate_parameters else (c, s)
+        else:
+            if args.estimate_parameters:
+                relevant_params = {k: params[k] for k in ["g", "sn", "b", "b_nonneg", "penalty"]}
+                relevant_params["optimize_g"] = params["optimize_tau"]
+                return deconvolve(t, **relevant_params)
+            elif args.tau_rise == 0:
+                return (oasisAR1_f32 if t.dtype == np.float32 else oasisAR1)(
+                    t, args.g[0], s_min=args.s_min, lam=args.lam
+                )
+            else:
+                return oasisAR2(t.astype(float), args.g[0], args.g[1], s_min=args.s_min, lam=args.lam)
+
+    try:
+        print(f"Performing Event Detection for {experiment_id}")
+
+        with h5py.File(dff_fp, "r") as f:
+            traces = f["data"][:]
+        N, T = traces.shape
+        nans = np.where(np.isnan(traces))[0]
+        if len(nans) > 0:
+            logging.info(f"Traces have nans: {len(nans)} in {experiment_id}")
+
+        # run oasis on each trace in parallel
+        if N:
+            pool = Pool(int(tmp) if (tmp := os.environ.get("CO_CPUS")) else tmp)
+            res = pool.map(_deconv, traces)
+            calcium, spikes = [np.array([r[i] for r in res], dtype="f4") for i in (0, 1)]
+            if args.estimate_parameters:
+                b_hat, g_hat, lam_hat = [np.array([r[i] for r in res], dtype="f4") for i in (2, 3, 4)]
+                # convert parameters of the auto-regressive (AR) process to time constants
+                if g_hat.ndim == 1:  # AR1
+                    tau_hat = -1 / np.log(g_hat) / frame_rate
+                else:  # AR2
+                    tmp = np.sqrt(g_hat[:, 0] ** 2 + 4 * g_hat[:, 1]) / 2
+                    tau_hat = -1 / np.log(g_hat[:, 0] / 2 + tmp) / frame_rate
+                    tau_rise_hat = -1 / np.log(g_hat[:, 0] / 2 - tmp) / frame_rate
+        else:  # no ROIs detected
+            calcium, spikes = [np.empty((0, T), dtype="f4")] * 2
+            if args.estimate_parameters:
+                b_hat, tau_hat, lam_hat = [], [], []
+                if args.tau_rise != 0:
+                    tau_rise_hat = []
+
+        # save to h5
+        oasis_h5 = output_dir / f"{experiment_id}_events_oasis.h5"
+        with h5py.File(oasis_h5, "w") as f:
+            f.create_dataset("events", data=spikes, compression="gzip")
+            f.create_dataset("denoised", data=calcium, compression="gzip")
+            if args.estimate_parameters:
+                f.create_dataset("b_hat", data=b_hat)
+                f.create_dataset("tau_hat", data=tau_hat)
+                if args.tau_rise != 0:
+                    f.create_dataset("tau_rise_hat", data=tau_rise_hat)
+                f.create_dataset("lam_hat", data=lam_hat)
+
+        # QC plots
+        if N:
+            if not args.no_qc:
+                plots_path = output_dir / "plots"
+                plots_path.mkdir(exist_ok=True, parents=True)
+                timestamps = np.arange(T) / frame_rate
+                pool.starmap(
+                    plot_trace_and_events_png,
+                    zip(
+                        traces,
+                        calcium + (b_hat[:, None] if args.estimate_parameters else params["b"]),
+                        spikes,
+                        [timestamps] * N,
+                        range(N),
+                        tau_hat if args.estimate_parameters else [args.tau] * N,
+                        [plots_path] * N,
+                    ),
+                )
+            pool.close()
+
+        logging.info(f"SUCCESS: {experiment_id}")
+    except Exception as e:
+        logging.error(f"FAILED: {experiment_id}")
+        raise e
 
     write_output_metadata(
         params,
-        dff_file.parent,
+        dff_dir,
         ProcessName.FLUORESCENCE_EVENT_DETECTION,
-        str(dff_file),
-        str(oasis_h5),
+        dff_fp,
+        oasis_h5,
         start_time,
     )
-
-
-if __name__ == "__main__":
-    main()
