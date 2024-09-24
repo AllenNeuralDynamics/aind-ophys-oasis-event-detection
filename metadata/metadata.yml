@@ -1,7 +1,7 @@
 metadata_version: 1
 name: aind-ophys-oasis-event-detection
-description: This capsule extracts neural activity from fluorescence imaging traces
-  using nonnegative deconvolution.
+description: This capsule uses OASIS to extract neural activity from fluorescence
+  imaging traces through nonnegative deconvolution.
 authors:
 - name: AIND
 - name: Matt Davis
