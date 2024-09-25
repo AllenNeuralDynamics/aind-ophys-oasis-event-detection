@@ -17,5 +17,6 @@ RUN pip install -U --no-cache-dir \
     h5py==3.9.0 \
     numpy==1.25.1 \
     oasis-deconv==0.2.0 \
+    pydantic==2.8.2 \
     seaborn==0.12.2 \
     aind-data-schema==0.22.0
