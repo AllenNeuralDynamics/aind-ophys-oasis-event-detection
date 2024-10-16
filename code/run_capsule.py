@@ -3,7 +3,6 @@ import json
 import logging
 import os
 from datetime import datetime as dt
-from datetime import timezone as tz
 from multiprocessing.pool import Pool
 from pathlib import Path
 from typing import Union
@@ -48,7 +47,7 @@ def write_output_metadata(
                     name=process_name,
                     software_version=os.getenv("VERSION"),  # TODO: FIX THIS!!
                     start_date_time=start_date_time,
-                    end_date_time=dt.now(tz.utc),
+                    end_date_time=dt.now(),
                     input_location=str(input_fp),
                     output_location=str(output_fp),
                     code_url=os.getenv("REPO_URL"),
@@ -169,7 +168,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     params = vars(args)
 
-    start_time = dt.now(tz.utc)
+    start_time = dt.now()
     output_dir = Path(args.output_dir).resolve()
     input_dir = Path(args.input_dir).resolve()
     dff_dir = next(input_dir.glob("*/dff"))
