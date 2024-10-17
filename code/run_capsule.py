@@ -40,12 +40,12 @@ def write_output_metadata(
     processing = Processing(
         processing_pipeline=PipelineProcess(
             processor_full_name="Multplane Ophys Processing Pipeline",
-            pipeline_url="https://codeocean.allenneuraldynamics.org/capsule/5472403/tree",
-            pipeline_version="0.5.0",
+            pipeline_url=os.getenv("PIPELINE_URL", ""),
+            pipeline_version=os.getenv("PIPELINE_VERSION", ""),
             data_processes=[
                 DataProcess(
                     name=process_name,
-                    software_version=os.getenv("VERSION"),  # TODO: FIX THIS!!
+                    software_version=os.getenv("VERSION", ""),
                     start_date_time=start_date_time,
                     end_date_time=dt.now(),
                     input_location=str(input_fp),
