@@ -173,7 +173,7 @@ if __name__ == "__main__":
     input_dir = Path(args.input_dir).resolve()
     dff_dir = next(input_dir.glob("*/dff"))
     experiment_id = dff_dir.parent.name
-    dff_fp = next(dff_dir.glob("dff.h5"))
+    dff_fp = next(dff_dir.glob("*dff.h5"))
     output_dir = make_output_directory(output_dir, experiment_id)
     process_json_fp = dff_dir / "processing.json"
     with open(process_json_fp, "r") as f:
