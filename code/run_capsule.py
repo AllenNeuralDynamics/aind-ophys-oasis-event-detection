@@ -171,7 +171,7 @@ if __name__ == "__main__":
     start_time = dt.now()
     output_dir = Path(args.output_dir).resolve()
     input_dir = Path(args.input_dir).resolve()
-    dff_dir = next(input_dir.glob("*/dff"))
+    dff_dir = next(input_dir.rglob("*/dff/"))
     experiment_id = dff_dir.parent.name
     dff_fp = next(dff_dir.glob("*dff.h5"))
     output_dir = make_output_directory(output_dir, experiment_id)
