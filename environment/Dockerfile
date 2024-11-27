@@ -2,9 +2,9 @@
 FROM registry.codeocean.allenneuraldynamics.org/codeocean/jupyterlab:3.4.4-miniconda4.12.0-python3.9-ubuntu20.04
 
 ARG DEBIAN_FRONTEND=noninteractive
-ENV PIPELINE_URL=""
-ENV PIPELINE_VERSION=""
-ENV VERSION="3.0"
+ENV PIPELINE_URL="https://codeocean.allenneuraldynamics.org/capsule/5619253/tree"
+ENV PIPELINE_VERSION="1.0"
+ENV VERSION="4.0"
 
 ENV REPO_URL=https://github.com/AllenNeuralDynamics/aind-ophys-oasis-event-detection
 
