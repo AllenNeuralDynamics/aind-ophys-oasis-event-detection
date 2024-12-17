@@ -22,5 +22,6 @@ RUN pip install -U --no-cache-dir \
     pydantic==2.8.2 \
     seaborn==0.12.2 \
     aind-data-schema==1.1.0 \
-    pydantic==2.8.1 \
-    aind-log-utils
+    pydantic==2.8.1
+
+RUN pip install aind-log-utils
