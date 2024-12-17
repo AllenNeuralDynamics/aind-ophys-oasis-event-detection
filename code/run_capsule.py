@@ -5,15 +5,16 @@ import os
 from datetime import datetime as dt
 from multiprocessing.pool import Pool
 from pathlib import Path
-from typing import Union
+from typing import Union, Tuple
 
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-from aind_data_schema.core.processing import DataProcess, PipelineProcess, Processing, ProcessName
+from aind_data_schema.core.processing import DataProcess, PipelineProcess, Processing, ProcessName, Subject, Session, DataDescription
 from oasis.functions import deconvolve
 from oasis.oasis_methods import oasisAR1, oasisAR1_f32, oasisAR2
+from aind_log_utils.log import setup_logging
 
 
 def write_output_metadata(
@@ -104,6 +105,28 @@ def plot_trace_and_events_png(trace, ca, spike, timestamps, roi_id, tau, plots_p
         plt.close(fig)
 
 
+def get_metadata(input_dir: Path, meta_type: str) -> dict:
+    """Extracts metadata from processing and subject json files
+    
+    Parameters
+    ----------
+    input_dir: Path
+        input directory
+    meta_type: str
+        type of metadata to extract
+
+    Returns
+    -------
+    metadata: dict
+        metadata
+    """
+    input_fp = next(input_dir.rglob(f"{meta_type}.json"), "")
+    if not input_fp:
+        raise FileNotFoundError(f"No {meta_type}.json file found in {input_dir}")
+    with open(input_fp, "r") as f:
+        metadata = json.load(f)
+    return metadata
+    
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--input-dir", type=str, default="../data/", help="Input directory")
@@ -167,7 +190,6 @@ if __name__ == "__main__":
     parser.add_argument("--no_qc", action="store_true", help="Skip QC plots.")
     args = parser.parse_args()
     params = vars(args)
-
     start_time = dt.now()
     output_dir = Path(args.output_dir).resolve()
     input_dir = Path(args.input_dir).resolve()
@@ -175,13 +197,14 @@ if __name__ == "__main__":
     experiment_id = dff_dir.parent.name
     dff_fp = next(dff_dir.glob("*dff.h5"))
     output_dir = make_output_directory(output_dir, experiment_id)
-    process_json_fp = dff_dir / "processing.json"
-    with open(process_json_fp, "r") as f:
-        process_json = json.load(f)
-    for data_process in process_json["processing_pipeline"]["data_processes"]:
-        if data_process["name"] == "Video motion correction":
-            frame_rate = data_process["parameters"]["movie_frame_rate_hz"]
-
+    session_data = get_metadata(input_dir, "session.json")
+    session = Session(**session_data)
+    frame_rate = session.data_streams.ophys_fovs[0].frames_rate_hz
+    subject_data = get_metadata(input_dir, "subject.json")
+    subject_id = Subject(**subject_data).subject_id
+    data_description_data = get_metadata(input_dir, "data_description.json")
+    name = DataDescription(**data_description_data).name
+    setup_logging("aind-ophys-oasis-event-detection", mouse_id=subject_id, session=name)
     # convert time constants to parameters of the auto-regressive (AR) process
     if args.tau is None or args.tau_rise is None:  # automatically estimate tau
         if args.tau_rise == 0:  # negligible rise time -> AR1
