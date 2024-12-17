@@ -11,7 +11,10 @@ import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-from aind_data_schema.core.processing import DataProcess, ProcessName, Subject, Session, DataDescription
+from aind_data_schema.core.processing import DataProcess, ProcessName
+from aind_data_schema.core.subject import Subject
+from aind_data_schema.core.data_description import DataDescription
+from aind_data_schema.core.session import Session
 from oasis.functions import deconvolve
 from oasis.oasis_methods import oasisAR1, oasisAR1_f32, oasisAR2
 from aind_log_utils.log import setup_logging
@@ -111,9 +114,9 @@ def get_metadata(input_dir: Path, meta_type: str) -> dict:
     metadata: dict
         metadata
     """
-    input_fp = next(input_dir.rglob(f"{meta_type}.json"), "")
+    input_fp = next(input_dir.rglob(f"{meta_type}"), "")
     if not input_fp:
-        raise FileNotFoundError(f"No {meta_type}.json file found in {input_dir}")
+        raise FileNotFoundError(f"No {meta_type} file found in {input_dir}")
     with open(input_fp, "r") as f:
         metadata = json.load(f)
     return metadata
