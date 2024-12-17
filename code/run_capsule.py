@@ -11,19 +11,18 @@ import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-from aind_data_schema.core.processing import DataProcess, PipelineProcess, Processing, ProcessName, Subject, Session, DataDescription
+from aind_data_schema.core.processing import DataProcess, ProcessName, Subject, Session, DataDescription
 from oasis.functions import deconvolve
 from oasis.oasis_methods import oasisAR1, oasisAR1_f32, oasisAR2
 from aind_log_utils.log import setup_logging
 
 
-def write_output_metadata(
+def write_data_process(
     metadata: dict,
-    process_json_dir: str,
-    process_name: str,
     input_fp: Union[str, Path],
     output_fp: Union[str, Path],
-    start_date_time: dt,
+    start_time: dt,
+    end_time: dt,
 ) -> None:
     """Writes output metadata to plane processing.json
 
@@ -31,35 +30,27 @@ def write_output_metadata(
     ----------
     metadata: dict
         parameters from suite2p motion correction
-    input_fp: str
-        path to data input
+    raw_movie: str
+        path to raw movies
     output_fp: str
-        path to data output
+        path to motion corrected movies
     """
-    with open(Path(process_json_dir) / "processing.json", "r") as f:
-        proc_data = json.load(f)
-    processing = Processing(
-        processing_pipeline=PipelineProcess(
-            processor_full_name="Multplane Ophys Processing Pipeline",
-            pipeline_url=os.getenv("PIPELINE_URL", ""),
-            pipeline_version=os.getenv("PIPELINE_VERSION", ""),
-            data_processes=[
-                DataProcess(
-                    name=process_name,
-                    software_version=os.getenv("VERSION", ""),
-                    start_date_time=start_date_time,
-                    end_date_time=dt.now(),
-                    input_location=str(input_fp),
-                    output_location=str(output_fp),
-                    code_url=os.getenv("REPO_URL"),
-                    parameters=metadata,
-                )
-            ],
-        )
+    data_proc = DataProcess(
+        name=ProcessName.FLUORESCENCE_EVENT_DETECTION,
+        software_version=os.getenv("VERSION", ""),
+        start_date_time=start_time.isoformat(),
+        end_date_time=end_time.isoformat(),
+        input_location=str(input_fp),
+        output_location=str(output_fp),
+        code_url=(
+            os.getenv("REPO_URL", "")
+        ),
+        parameters=metadata,
     )
-    prev_processing = Processing(**proc_data)
-    prev_processing.processing_pipeline.data_processes.append(processing.processing_pipeline.data_processes[0])
-    prev_processing.write_standard_file(output_directory=Path(output_fp).parent)
+    if isinstance(output_fp, str):
+        output_dir = Path(output_fp).parent
+    with open(output_dir / "data_process.json", "w") as f:
+        json.dump(json.loads(data_proc.model_dump_json()), f, indent=4)
 
 
 def make_output_directory(output_dir: Path, experiment_id: str) -> Path:
@@ -320,11 +311,10 @@ if __name__ == "__main__":
         logging.error(f"FAILED: {experiment_id}")
         raise e
 
-    write_output_metadata(
+    write_data_process(
         params,
-        dff_dir,
-        ProcessName.FLUORESCENCE_EVENT_DETECTION,
         dff_fp,
         oasis_h5,
         start_time,
+        end_time=dt.now(),
     )
