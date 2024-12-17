@@ -192,8 +192,10 @@ if __name__ == "__main__":
     dff_fp = next(dff_dir.glob("*dff.h5"))
     output_dir = make_output_directory(output_dir, experiment_id)
     session_data = get_metadata(input_dir, "session.json")
-    session = Session(**session_data)
-    frame_rate = session.data_streams.ophys_fovs[0].frames_rate_hz
+    try:
+        frame_rate = session["data_streams"]["ophys_fovs"][0]["frames_rate_hz"]
+    except (KeyError, IndexError):
+        raise("Frame rate not located in the session.json")
     subject_data = get_metadata(input_dir, "subject.json")
     subject_id = Subject(**subject_data).subject_id
     data_description_data = get_metadata(input_dir, "data_description.json")
