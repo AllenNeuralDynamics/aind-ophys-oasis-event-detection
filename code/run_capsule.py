@@ -5,16 +5,16 @@ import os
 from datetime import datetime as dt
 from multiprocessing.pool import Pool
 from pathlib import Path
-from typing import Union, Tuple
+from typing import Tuple, Union
 
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 from aind_data_schema.core.processing import DataProcess, ProcessName
+from aind_log_utils.log import setup_logging
 from oasis.functions import deconvolve
 from oasis.oasis_methods import oasisAR1, oasisAR1_f32, oasisAR2
-from aind_log_utils.log import setup_logging
 
 
 def write_data_process(
@@ -42,9 +42,7 @@ def write_data_process(
         end_date_time=end_time.isoformat(),
         input_location=str(input_fp),
         output_location=str(output_fp),
-        code_url=(
-            os.getenv("REPO_URL", "")
-        ),
+        code_url=(os.getenv("REPO_URL", "")),
         parameters=metadata,
     )
     if isinstance(output_fp, str):
@@ -76,7 +74,9 @@ def make_output_directory(output_dir: Path, experiment_id: str) -> Path:
     return output_dir
 
 
-def plot_trace_and_events_png(trace, ca, spike, timestamps, roi_id, tau, plots_path, show_fig=False) -> None:
+def plot_trace_and_events_png(
+    trace, ca, spike, timestamps, roi_id, tau, plots_path, show_fig=False
+) -> None:
     sns.set_context("talk")
     fig, ax = plt.subplots(2, 1, figsize=(20, 5), sharex=True)
     ax[0].plot(timestamps, 100 * trace, color="C0", label=r"raw $\Delta$F/F")
@@ -98,7 +98,7 @@ def plot_trace_and_events_png(trace, ca, spike, timestamps, roi_id, tau, plots_p
 
 def get_metadata(input_dir: Path, meta_type: str) -> dict:
     """Extracts metadata from processing and subject json files
-    
+
     Parameters
     ----------
     input_dir: Path
@@ -117,11 +117,16 @@ def get_metadata(input_dir: Path, meta_type: str) -> dict:
     with open(input_fp, "r") as f:
         metadata = json.load(f)
     return metadata
-    
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input-dir", type=str, default="../data/", help="Input directory")
-    parser.add_argument("-o", "--output-dir", type=str, default="../results/", help="Output directory")
+    parser.add_argument(
+        "-i", "--input-dir", type=str, default="../data/", help="Input directory"
+    )
+    parser.add_argument(
+        "-o", "--output-dir", type=str, default="../results/", help="Output directory"
+    )
     parser.add_argument(
         "--estimate_parameters",
         type=bool,
@@ -158,7 +163,12 @@ if __name__ == "__main__":
         help="Fluorescence baseline value. If no value is given, "
         "then b is optimized if estimate_parameters==True else 0.",
     )
-    parser.add_argument("--b_nonneg", type=bool, default=True, help="Enforce strictly non-negative baseline if True")
+    parser.add_argument(
+        "--b_nonneg",
+        type=bool,
+        default=True,
+        help="Enforce strictly non-negative baseline if True",
+    )
     parser.add_argument(
         "--sn",
         type=float,
@@ -166,7 +176,12 @@ if __name__ == "__main__":
         help="Standard deviation of the noise distribution. If no value is given, "
         "then sn is estimated from the data based on power spectral density.",
     )
-    parser.add_argument("--penalty", type=int, default=1, help="Sparsity penalty. 1: min |s|_1  0: min |s|_0")
+    parser.add_argument(
+        "--penalty",
+        type=int,
+        default=1,
+        help="Sparsity penalty. 1: min |s|_1  0: min |s|_0",
+    )
     parser.add_argument(
         "--lam",
         type=float,
@@ -176,7 +191,10 @@ if __name__ == "__main__":
         "under L1 penalty if estimate_parameters==True else 0",
     )
     parser.add_argument(
-        "--s_min", type=float, default=0, help="Minimal non-zero activity within each bin (minimal 'spike size')."
+        "--s_min",
+        type=float,
+        default=0,
+        help="Minimal non-zero activity within each bin (minimal 'spike size').",
     )
     parser.add_argument("--no_qc", action="store_true", help="Skip QC plots.")
     args = parser.parse_args()
@@ -192,11 +210,11 @@ if __name__ == "__main__":
     try:
         frame_rate = session_data["data_streams"][0]["ophys_fovs"][0]["frame_rate"]
     except (KeyError, IndexError):
-        raise("Frame rate not located in the session.json")
+        raise ("Frame rate not located in the session.json")
     subject_data = get_metadata(input_dir, "subject.json")
     subject_id = subject_data["subject_id"]
     data_description_data = get_metadata(input_dir, "data_description.json")
-    name =data_description_data["name"]
+    name = data_description_data["name"]
     setup_logging("aind-ophys-oasis-event-detection", mouse_id=subject_id, session=name)
     # convert time constants to parameters of the auto-regressive (AR) process
     if args.tau is None or args.tau_rise is None:  # automatically estimate tau
@@ -208,7 +226,10 @@ if __name__ == "__main__":
         if args.tau_rise == 0:  # negligible rise time -> AR1
             params["g"] = (np.exp(-1 / (args.tau * frame_rate)),)
         else:  # AR2
-            d, r = (np.exp(-1 / (args.tau * frame_rate)), np.exp(-1 / (args.tau_rise * frame_rate)))
+            d, r = (
+                np.exp(-1 / (args.tau * frame_rate)),
+                np.exp(-1 / (args.tau_rise * frame_rate)),
+            )
             params["g"] = (d + r, -d * r)
 
     if not args.estimate_parameters:
@@ -235,7 +256,9 @@ if __name__ == "__main__":
             return (c, s, np.nan, np.nan, np.nan) if args.estimate_parameters else (c, s)
         else:
             if args.estimate_parameters:
-                relevant_params = {k: params[k] for k in ["g", "sn", "b", "b_nonneg", "penalty"]}
+                relevant_params = {
+                    k: params[k] for k in ["g", "sn", "b", "b_nonneg", "penalty"]
+                }
                 relevant_params["optimize_g"] = params["optimize_tau"]
                 return deconvolve(t, **relevant_params)
             elif args.tau_rise == 0:
@@ -243,7 +266,13 @@ if __name__ == "__main__":
                     t - params["b"], args.g[0], s_min=args.s_min, lam=args.lam
                 )
             else:
-                return oasisAR2(t.astype(float) - params["b"], args.g[0], args.g[1], s_min=args.s_min, lam=args.lam)
+                return oasisAR2(
+                    t.astype(float) - params["b"],
+                    args.g[0],
+                    args.g[1],
+                    s_min=args.s_min,
+                    lam=args.lam,
+                )
 
     try:
         print(f"Performing Event Detection for {experiment_id}")
@@ -261,7 +290,9 @@ if __name__ == "__main__":
             res = pool.map(_deconv, traces)
             calcium, spikes = [np.array([r[i] for r in res], dtype="f4") for i in (0, 1)]
             if args.estimate_parameters:
-                b_hat, g_hat, lam_hat = [np.array([r[i] for r in res], dtype="f4") for i in (2, 3, 4)]
+                b_hat, g_hat, lam_hat = [
+                    np.array([r[i] for r in res], dtype="f4") for i in (2, 3, 4)
+                ]
                 # convert parameters of the auto-regressive (AR) process to time constants
                 if g_hat.ndim == 1:  # AR1
                     tau_hat = -1 / np.log(g_hat) / frame_rate
@@ -298,7 +329,8 @@ if __name__ == "__main__":
                     plot_trace_and_events_png,
                     zip(
                         traces,
-                        calcium + (b_hat[:, None] if args.estimate_parameters else params["b"]),
+                        calcium
+                        + (b_hat[:, None] if args.estimate_parameters else params["b"]),
                         spikes,
                         [timestamps] * N,
                         range(N),
