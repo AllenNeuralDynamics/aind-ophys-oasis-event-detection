@@ -1,9 +1,0 @@
-{
-	"version": 1,
-	"attached_datasets": [
-		{
-			"id": "90ac3cfd-ca85-4b44-973d-86925a0df89c",
-			"mount": "single-plane-ophys-731012_2024-08-13_23-49-46_processed_2024-12-05_07-19-33"
-		}
-	]
-}

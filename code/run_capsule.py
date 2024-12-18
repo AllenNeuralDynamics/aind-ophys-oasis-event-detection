@@ -193,13 +193,13 @@ if __name__ == "__main__":
     output_dir = make_output_directory(output_dir, experiment_id)
     session_data = get_metadata(input_dir, "session.json")
     try:
-        frame_rate = session_data["data_streams"]["ophys_fovs"][0]["frames_rate"]
+        frame_rate = session_data["data_streams"][0]["ophys_fovs"][0]["frame_rate"]
     except (KeyError, IndexError):
         raise("Frame rate not located in the session.json")
     subject_data = get_metadata(input_dir, "subject.json")
-    subject_id = Subject(**subject_data).subject_id
+    subject_id = subject_data["subject_id"]
     data_description_data = get_metadata(input_dir, "data_description.json")
-    name = DataDescription(**data_description_data).name
+    name =data_description_data["name"]
     setup_logging("aind-ophys-oasis-event-detection", mouse_id=subject_id, session=name)
     # convert time constants to parameters of the auto-regressive (AR) process
     if args.tau is None or args.tau_rise is None:  # automatically estimate tau
