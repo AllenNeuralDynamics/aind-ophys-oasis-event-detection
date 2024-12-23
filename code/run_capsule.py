@@ -45,6 +45,7 @@ def write_data_process(
         code_url=(os.getenv("REPO_URL", "")),
         parameters=metadata,
     )
+    output_dir = output_fp.parent
     if isinstance(output_fp, str):
         output_dir = Path(output_fp).parent
     with open(output_dir / "data_process.json", "w") as f:
@@ -212,9 +213,9 @@ if __name__ == "__main__":
     except (KeyError, IndexError):
         raise ("Frame rate not located in the session.json")
     subject_data = get_metadata(input_dir, "subject.json")
-    subject_id = subject_data["subject_id"]
+    subject_id = subject_data.get("subject_id", "")
     data_description_data = get_metadata(input_dir, "data_description.json")
-    name = data_description_data["name"]
+    name = data_description_data.get("name", "")
     setup_logging("aind-ophys-oasis-event-detection", mouse_id=subject_id, session=name)
     # convert time constants to parameters of the auto-regressive (AR) process
     if args.tau is None or args.tau_rise is None:  # automatically estimate tau
