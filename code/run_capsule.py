@@ -216,7 +216,9 @@ if __name__ == "__main__":
     subject_id = subject_data.get("subject_id", "")
     data_description_data = get_metadata(input_dir, "data_description.json")
     name = data_description_data.get("name", "")
-    setup_logging("aind-ophys-oasis-event-detection", mouse_id=subject_id, session_name=name)
+    setup_logging(
+        "aind-ophys-oasis-event-detection", mouse_id=subject_id, session_name=name
+    )
     # convert time constants to parameters of the auto-regressive (AR) process
     if args.tau is None or args.tau_rise is None:  # automatically estimate tau
         if args.tau_rise == 0:  # negligible rise time -> AR1
