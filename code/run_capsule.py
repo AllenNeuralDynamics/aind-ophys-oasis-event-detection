@@ -209,7 +209,7 @@ if __name__ == "__main__":
     output_dir = make_output_directory(output_dir, experiment_id)
     session_data = get_metadata(input_dir, "session.json")
     try:
-        frame_rate = session_data["data_streams"][0]["ophys_fovs"][0]["frame_rate"]
+        frame_rate = float(session_data["data_streams"][0]["ophys_fovs"][0]["frame_rate"])
     except (KeyError, IndexError):
         raise ("Frame rate not located in the session.json")
     subject_data = get_metadata(input_dir, "subject.json")
