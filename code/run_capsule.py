@@ -21,6 +21,7 @@ def write_data_process(
     metadata: dict,
     input_fp: Union[str, Path],
     output_fp: Union[str, Path],
+    unique_id: str,
     start_time: dt,
     end_time: dt,
 ) -> None:
@@ -34,6 +35,12 @@ def write_data_process(
         path to raw movies
     output_fp: str
         path to motion corrected movies
+    unique_id: str
+        unique identifier for the processing
+    start_time: dt
+        start time of processing
+    end_time: dt
+        end time of processing
     """
     data_proc = DataProcess(
         name=ProcessName.FLUORESCENCE_EVENT_DETECTION,
@@ -47,8 +54,9 @@ def write_data_process(
     )
     if isinstance(output_fp, str):
         output_dir = Path(output_fp).parent
-    output_dir = output_fp.parent
-    with open(output_dir / "data_process.json", "w") as f:
+    else:
+        output_dir = output_fp.parent
+    with open(output_dir / f"{unique_id}_data_process.json", "w") as f:
         json.dump(json.loads(data_proc.model_dump_json()), f, indent=4)
 
 
@@ -352,6 +360,7 @@ if __name__ == "__main__":
         params,
         dff_fp,
         oasis_h5,
+        experiment_id,
         start_time,
         end_time=dt.now(),
     )
