@@ -84,7 +84,7 @@ def make_output_directory(output_dir: Path, experiment_id: str) -> Path:
 
 
 def plot_trace_and_events_png(
-    trace, ca, spike, timestamps, roi_id, tau, plots_path, show_fig=False
+    trace, ca, spike, timestamps, roi_id, tau, plots_path, experiment_id, show_fig=False
 ) -> None:
     sns.set_context("talk")
     fig, ax = plt.subplots(2, 1, figsize=(20, 5), sharex=True)
@@ -100,7 +100,7 @@ def plot_trace_and_events_png(
     ax[1].set_xlabel("Time [s]")
     ax[1].set_ylabel("Spike rate [a.u.]")
     plt.tight_layout(pad=0.2)
-    fig.savefig(plots_path / f"{roi_id}_oasis.png")
+    fig.savefig(plots_path / f"{experiment_id}_{roi_id}_oasis.png")
     if not show_fig:
         plt.close(fig)
 
@@ -347,6 +347,7 @@ if __name__ == "__main__":
                         range(N),
                         tau_hat if args.estimate_parameters else [args.tau] * N,
                         [plots_path] * N,
+                        [experiment_id] * N,
                     ),
                 )
             pool.close()
