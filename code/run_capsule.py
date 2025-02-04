@@ -15,6 +15,8 @@ from aind_data_schema.core.processing import DataProcess, ProcessName
 from aind_log_utils.log import setup_logging
 from oasis.functions import deconvolve
 from oasis.oasis_methods import oasisAR1, oasisAR1_f32, oasisAR2
+from aind_data_schema.core.quality_control import (QCMetric, Status, QCStatus)
+from aind_qcportal_schema.metric_value import DropdownMetric
 
 
 def write_data_process(
