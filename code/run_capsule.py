@@ -117,7 +117,7 @@ def write_qc_metrics(
         metric = QCMetric(
             name=f"{roi_id} Event Detection",
             description="",
-            reference=str("plots" / f"{experiment_id}_{roi_id}_oasis.png"),
+            reference=str(f"plots/{experiment_id}_{roi_id}_oasis.png"),
             status_history=[
                 QCStatus(
                     evaluator='Automated',
