@@ -110,10 +110,6 @@ def write_qc_metrics(
     params: dict
 ) -> None:
 
-"""
-for each roi, as dectected by plots like "{output_dir}/plots/{experiment_id}_{roi_id}_oasis.png"
-create a QCMetric object and save to "{output_dir}/{experiment_id}_{roi)id}_events_metric.json"
-"""
 
     for roi_id in range(len(params["spikes"])):
         metric = QCMetric(
@@ -138,10 +134,10 @@ create a QCMetric object and save to "{output_dir}/{experiment_id}_{roi)id}_even
                 Status.FAIL,
             ]
         )
+    )
 
     with open(output_dir / f"{experiment_id}_{roi_id}_events_metric.json", "w") as f:
         json.dump(json.loads(metric.model_dump_json()), f, indent=4)
-    )
 
 
 
