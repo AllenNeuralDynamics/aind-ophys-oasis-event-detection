@@ -115,31 +115,31 @@ def write_qc_metrics(
 
     for roi_id in range(N):
         metric = QCMetric(
-        name=f"{roi_id} Event Detection",
-        description="",
-        reference=str(output_dir / "plots" / f"{experiment_id}_{roi_id}_oasis.png"),
-        status_history=[
-            QCStatus(
-                evaluator='Automated',
-                timestamp=dt.now(),
-                status=Status.PASS
-            )
-        ],
-        value=DropdownMetric(
-            value=["Reasonable"],
-            options=[
-                "Reasonable",
-                "Unreasonable",
+            name=f"{roi_id} Event Detection",
+            description="",
+            reference=str("plots" / f"{experiment_id}_{roi_id}_oasis.png"),
+            status_history=[
+                QCStatus(
+                    evaluator='Automated',
+                    timestamp=dt.now(),
+                    status=Status.PASS
+                )
             ],
-            status=[
-                Status.PASS,
-                Status.FAIL,
-            ]
+            value=DropdownMetric(
+                value=["Reasonable"],
+                options=[
+                    "Reasonable",
+                    "Unreasonable",
+                ],
+                status=[
+                    Status.PASS,
+                    Status.FAIL,
+                ]
+            )
         )
-    )
 
-    with open(output_dir / f"{experiment_id}_{roi_id}_events_metric.json", "w") as f:
-        json.dump(json.loads(metric.model_dump_json()), f, indent=4)
+        with open(output_dir / f"{experiment_id}_{roi_id}_events_metric.json", "w") as f:
+            json.dump(json.loads(metric.model_dump_json()), f, indent=4)
 
 
 
