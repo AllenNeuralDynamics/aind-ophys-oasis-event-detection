@@ -107,11 +107,11 @@ def plot_trace_and_events_png(
 def write_qc_metrics(
     output_dir: Path,
     experiment_id: str,
-    params: dict
+    N: int
 ) -> None:
 
 
-    for roi_id in range(len(params["spikes"])):
+    for roi_id in range(N):
         metric = QCMetric(
         name=f"{roi_id} Event Detection",
         description="",
@@ -405,5 +405,5 @@ if __name__ == "__main__":
     write_qc_metrics(
         output_dir,
         experiment_id,
-        params
+        N
     )
