@@ -104,6 +104,46 @@ def plot_trace_and_events_png(
     if not show_fig:
         plt.close(fig)
 
+def write_qc_metrics(
+    output_dir: Path,
+    experiment_id: str,
+    params: dict
+) -> None:
+
+"""
+for each roi, as dectected by plots like "{output_dir}/plots/{experiment_id}_{roi_id}_oasis.png"
+create a QCMetric object and save to "{output_dir}/{experiment_id}_{roi)id}_events_metric.json"
+"""
+
+    for roi_id in range(len(params["spikes"])):
+        metric = QCMetric(
+        name=f"{roi_id} Event Detection",
+        description="",
+        reference=str(output_dir / "plots" / f"{experiment_id}_{roi_id}_oasis.png"),
+        status_history=[
+            QCStatus(
+                evaluator='Automated',
+                timestamp=dt.now(),
+                status=Status.PASS
+            )
+        ],
+        value=DropdownMetric(
+            value=["Reasonable"],
+            options=[
+                "Reasonable",
+                "Unreasonable",
+            ],
+            status=[
+                Status.PASS,
+                Status.FAIL,
+            ]
+        )
+
+    with open(output_dir / f"{experiment_id}_{roi_id}_events_metric.json", "w") as f:
+        json.dump(json.loads(metric.model_dump_json()), f, indent=4)
+    )
+
+
 
 def get_metadata(input_dir: Path, meta_type: str) -> dict:
     """Extracts metadata from processing and subject json files
@@ -364,4 +404,10 @@ if __name__ == "__main__":
         experiment_id,
         start_time,
         end_time=dt.now(),
+    )
+
+    write_qc_metrics(
+        output_dir,
+        experiment_id,
+        params
     )
