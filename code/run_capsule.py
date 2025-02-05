@@ -115,7 +115,7 @@ def write_qc_metrics(
 
     for roi_id in range(N):
         metric = QCMetric(
-            name=f"{roi_id} Event Detection",
+            name=f"{experiment_id} {roi_id} Event Detection",
             description="",
             reference=str(f"plots/{experiment_id}_{roi_id}_oasis.png"),
             status_history=[
