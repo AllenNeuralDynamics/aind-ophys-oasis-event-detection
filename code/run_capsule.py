@@ -126,7 +126,7 @@ def write_qc_metrics(
                 )
             ],
             value=DropdownMetric(
-                value=["Reasonable"],
+                value="Reasonable",
                 options=[
                     "Reasonable",
                     "Unreasonable",
