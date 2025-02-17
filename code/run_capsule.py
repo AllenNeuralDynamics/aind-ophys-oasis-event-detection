@@ -5,18 +5,18 @@ import os
 from datetime import datetime as dt
 from multiprocessing.pool import Pool
 from pathlib import Path
-from typing import Tuple, Union
+from typing import Union
 
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 from aind_data_schema.core.processing import DataProcess, ProcessName
+from aind_data_schema.core.quality_control import QCMetric, QCStatus, Status
 from aind_log_utils.log import setup_logging
+from aind_qcportal_schema.metric_value import DropdownMetric
 from oasis.functions import deconvolve
 from oasis.oasis_methods import oasisAR1, oasisAR1_f32, oasisAR2
-from aind_data_schema.core.quality_control import (QCMetric, Status, QCStatus)
-from aind_qcportal_schema.metric_value import DropdownMetric
 
 
 def write_data_process(
@@ -106,12 +106,19 @@ def plot_trace_and_events_png(
     if not show_fig:
         plt.close(fig)
 
-def write_qc_metrics(
-    output_dir: Path,
-    experiment_id: str,
-    N: int
-) -> None:
 
+def write_qc_metrics(output_dir: Path, experiment_id: str, N: int) -> None:
+    """Writes QC metrics to json files. Creates one json file per ROI.
+
+    Parameters
+    ----------
+    output_dir: Path
+        output directory
+    experiment_id: str
+        unique plane id
+    N: int
+        number of ROIs detected
+    """
 
     for roi_id in range(N):
         metric = QCMetric(
@@ -119,11 +126,7 @@ def write_qc_metrics(
             description="",
             reference=str(f"plots/{experiment_id}_{roi_id}_oasis.png"),
             status_history=[
-                QCStatus(
-                    evaluator='Automated',
-                    timestamp=dt.now(),
-                    status=Status.PASS
-                )
+                QCStatus(evaluator="Automated", timestamp=dt.now(), status=Status.PASS)
             ],
             value=DropdownMetric(
                 value="Reasonable",
@@ -134,13 +137,14 @@ def write_qc_metrics(
                 status=[
                     Status.PASS,
                     Status.FAIL,
-                ]
-            )
+                ],
+            ),
         )
 
-        with open(output_dir / f"{experiment_id}_{roi_id}_events_metric.json", "w") as f:
+        with open(
+            output_dir / f"{experiment_id}_{roi_id}_events_metric.json", "w"
+        ) as f:
             json.dump(json.loads(metric.model_dump_json()), f, indent=4)
-
 
 
 def get_metadata(input_dir: Path, meta_type: str) -> dict:
@@ -185,16 +189,16 @@ if __name__ == "__main__":
         "--tau",
         type=float,
         default=None,
-        help="Exponential decay time in seconds (1/e, thus equal to half-life time divided by ln(2)). "
-        "Estimated from the autocovariance of the data if no value is given. "
+        help="Exponential decay time in seconds (1/e, thus equal to half-life time divided "
+        "by ln(2)). Estimated from the autocovariance of the data if no value is given. "
         "Has to be provided explicitly if estimate_parameters==False",
     )
     parser.add_argument(
         "--tau_rise",
         type=float,
         default=0,
-        help="Exponential rise time in seconds (1/e, thus equal to half-rise time divided by ln(2)). "
-        "Estimated from the autocovariance of the data if no value is given.",
+        help="Exponential rise time in seconds (1/e, thus equal to half-rise time divided by "
+        " ln(2)). Estimated from the autocovariance of the data if no value is given.",
     )
     parser.add_argument(
         "--optimize_tau",
@@ -255,7 +259,9 @@ if __name__ == "__main__":
     output_dir = make_output_directory(output_dir, experiment_id)
     session_data = get_metadata(input_dir, "session.json")
     try:
-        frame_rate = float(session_data["data_streams"][0]["ophys_fovs"][0]["frame_rate"])
+        frame_rate = float(
+            session_data["data_streams"][0]["ophys_fovs"][0]["frame_rate"]
+        )
     except (KeyError, IndexError):
         raise ("Frame rate not located in the session.json")
     subject_data = get_metadata(input_dir, "subject.json")
@@ -284,13 +290,14 @@ if __name__ == "__main__":
     if not args.estimate_parameters:
         if args.tau is None:
             raise UserWarning(
-                "'estimate_parameters' is False, but no value for decay time constant 'tau' has been provided."
+                "'estimate_parameters' is False, but no value for decay time "
+                "constant 'tau' has been provided."
             )
         if args.lam is None:
             params["lam"] = 0
             logging.info(
-                "'estimate_parameters' is False, but no value for sparsity penalty 'lam' has been provided, "
-                "thus automatically setting 'lam' to 0."
+                "'estimate_parameters' is False, but no value for sparsity penalty "
+                " 'lam' has been provided,thus automatically setting 'lam' to 0."
             )
         if args.b is None:
             params["b"] = 0
@@ -302,7 +309,9 @@ if __name__ == "__main__":
     def _deconv(t):
         if np.isnan(t).any():  # check if trace has any nans, if so return all nans
             c, s = np.full_like(t, np.nan), np.full_like(t, np.nan)
-            return (c, s, np.nan, np.nan, np.nan) if args.estimate_parameters else (c, s)
+            return (
+                (c, s, np.nan, np.nan, np.nan) if args.estimate_parameters else (c, s)
+            )
         else:
             if args.estimate_parameters:
                 relevant_params = {
@@ -337,7 +346,9 @@ if __name__ == "__main__":
         if N:
             pool = Pool(int(tmp) if (tmp := os.environ.get("CO_CPUS")) else tmp)
             res = pool.map(_deconv, traces)
-            calcium, spikes = [np.array([r[i] for r in res], dtype="f4") for i in (0, 1)]
+            calcium, spikes = [
+                np.array([r[i] for r in res], dtype="f4") for i in (0, 1)
+            ]
             if args.estimate_parameters:
                 b_hat, g_hat, lam_hat = [
                     np.array([r[i] for r in res], dtype="f4") for i in (2, 3, 4)
@@ -404,8 +415,4 @@ if __name__ == "__main__":
         end_time=dt.now(),
     )
 
-    write_qc_metrics(
-        output_dir,
-        experiment_id,
-        N
-    )
+    write_qc_metrics(output_dir, experiment_id, N)
