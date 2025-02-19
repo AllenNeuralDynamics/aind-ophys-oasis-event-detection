@@ -22,4 +22,5 @@ RUN pip install -U --no-cache-dir \
     pydantic==2.8.2 \
     seaborn==0.12.2 \
     aind-data-schema==1.1.0 \
-    aind-log-utils
+    aind-log-utils \
+    aind-qcportal-schema
