@@ -169,6 +169,28 @@ def get_metadata(input_dir: Path, meta_type: str) -> dict:
         metadata = json.load(f)
     return metadata
 
+def get_frame_rate(session: dict) -> float:
+    """Attempt to pull frame rate from session.json
+    Returns none if frame rate not in session.json
+
+    Parameters
+    ----------
+    session: dict
+        session metadata
+
+    Returns
+    -------
+    frame_rate: float
+        frame rate in Hz
+    """
+    frame_rate_hz = None
+    for i in session.get("data_streams", ""):
+        if i.get("ophys_fovs", ""):
+            frame_rate_hz = i["ophys_fovs"][0]["frame_rate"]
+            break
+    if isinstance(frame_rate_hz, str):
+        frame_rate_hz = float(frame_rate_hz)
+    return frame_rate_hz
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -258,12 +280,7 @@ if __name__ == "__main__":
     dff_fp = next(dff_dir.glob("*dff.h5"))
     output_dir = make_output_directory(output_dir, experiment_id)
     session_data = get_metadata(input_dir, "session.json")
-    try:
-        frame_rate = float(
-            session_data["data_streams"][0]["ophys_fovs"][0]["frame_rate"]
-        )
-    except (KeyError, IndexError):
-        raise ("Frame rate not located in the session.json")
+    frame_rate = get_frame_rate(session_data)
     subject_data = get_metadata(input_dir, "subject.json")
     subject_id = subject_data.get("subject_id", "")
     data_description_data = get_metadata(input_dir, "data_description.json")
