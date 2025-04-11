@@ -189,7 +189,7 @@ def get_frame_rate(session: dict) -> float:
             frame_rate_hz = i["ophys_fovs"][0]["frame_rate"]
             break
     if frame_rate_hz is None:
-        raise FileNotFoundError("No frame rate found in session.json")
+        raise ValueError("No frame rate found in session.json")
     if isinstance(frame_rate_hz, str):
         frame_rate_hz = float(frame_rate_hz)
     return frame_rate_hz
