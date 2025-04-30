@@ -77,10 +77,8 @@ def make_output_directory(output_dir: Path, experiment_id: str) -> Path:
     output_dir: Path
         output directory
     """
-    output_dir = output_dir / experiment_id
-    output_dir.mkdir(exist_ok=True)
-    output_dir = output_dir / "events"
-    output_dir.mkdir(exist_ok=True)
+    output_dir = output_dir / experiment_id / "events"
+    output_dir.mkdir(exist_ok=True, parents=True)
 
     return output_dir
 
@@ -171,7 +169,7 @@ def get_metadata(input_dir: Path, meta_type: str) -> dict:
 
 def get_frame_rate(session: dict) -> float:
     """Attempt to pull frame rate from session.json
-    Returns none if frame rate not in session.json
+    Raises ValueError if frame rate not in session.json
 
     Parameters
     ----------
