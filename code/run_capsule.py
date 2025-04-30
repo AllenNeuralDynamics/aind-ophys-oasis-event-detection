@@ -169,7 +169,7 @@ def get_metadata(input_dir: Path, meta_type: str) -> dict:
 
 def get_frame_rate(session: dict) -> float:
     """Attempt to pull frame rate from session.json
-    Returns none if frame rate not in session.json
+    Raises ValueError if frame rate not in session.json
 
     Parameters
     ----------
