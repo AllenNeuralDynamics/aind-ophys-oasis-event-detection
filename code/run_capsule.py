@@ -14,7 +14,7 @@ import seaborn as sns
 from aind_data_schema.core.processing import DataProcess, ProcessName
 from aind_data_schema.core.quality_control import QCMetric, QCStatus, Status
 from aind_log_utils.log import setup_logging
-from aind_qcportal_schema.metric_value import DropdownMetric
+from aind_qcportal_schema.metric_value import DropdownMetric, CurationMetric
 from oasis.functions import deconvolve
 from oasis.oasis_methods import oasisAR1, oasisAR1_f32, oasisAR2
 
@@ -117,32 +117,26 @@ def write_qc_metrics(output_dir: Path, experiment_id: str, N: int) -> None:
     N: int
         number of ROIs detected
     """
+    cell_plots = dict()
 
     for roi_id in range(N):
-        metric = QCMetric(
-            name=f"{experiment_id} {roi_id} Event Detection",
-            description="",
-            reference=str(f"plots/{experiment_id}_{roi_id}_oasis.png"),
-            status_history=[
-                QCStatus(evaluator="Automated", timestamp=dt.now(), status=Status.PASS)
-            ],
-            value=DropdownMetric(
-                value="Reasonable",
-                options=[
-                    "Reasonable",
-                    "Unreasonable",
-                ],
-                status=[
-                    Status.PASS,
-                    Status.FAIL,
-                ],
-            ),
-        )
-
-        with open(
-            output_dir / f"{experiment_id}_{roi_id}_events_metric.json", "w"
-        ) as f:
-            json.dump(json.loads(metric.model_dump_json()), f, indent=4)
+        cell_plots[roi_id] = f"plots/{experiment_id}_{roi_id}_oasis.png"
+    curation = CurationMetric(
+        value=[json.dumps(cell_plots)]
+    )
+    metric = QCMetric(
+        name=f"{experiment_id} {roi_id} Event Detection",
+        description="",
+        reference=str(f"plots/{experiment_id}_{roi_id}_oasis.png"),
+        status_history=[
+            QCStatus(evaluator="Automated", timestamp=dt.now(), status=Status.PASS)
+        ],
+        value=curation,
+    )
+    with open(
+        output_dir / f"{experiment_id}_events_metric.json", "w"
+    ) as f:
+        json.dump(json.loads(metric.model_dump_json()), f, indent=4)
 
 
 def get_metadata(input_dir: Path, meta_type: str) -> dict:
