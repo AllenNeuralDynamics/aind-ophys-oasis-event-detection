@@ -121,13 +121,9 @@ def write_qc_metrics(output_dir: Path, experiment_id: str, N: int) -> None:
 
     for roi_id in range(N):
         cell_plots[roi_id] = f"plots/{experiment_id}_{roi_id}_oasis.png"
-    print("CELL PLOTS")
-    print([json.dumps(cell_plots)])
     curation = CurationMetric(
-        value=[json.dumps(cell_plots)]
+        curations=[json.dumps(cell_plots)]
     )
-    print("~~~~~~~~~~~~~~~CURATION")
-    print(curation)
     metric = QCMetric(
         name=f"{experiment_id} {roi_id} Event Detection",
         description="",
