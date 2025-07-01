@@ -14,7 +14,7 @@ import seaborn as sns
 from aind_data_schema.core.processing import DataProcess, ProcessName
 from aind_data_schema.core.quality_control import QCMetric, QCStatus, Status
 from aind_log_utils.log import setup_logging
-from aind_qcportal_schema.metric_value import DropdownMetric, CurationMetric
+from aind_qcportal_schema.metric_value import CurationMetric, DropdownMetric
 from oasis.functions import deconvolve
 from oasis.oasis_methods import oasisAR1, oasisAR1_f32, oasisAR2
 
@@ -121,9 +121,7 @@ def write_qc_metrics(output_dir: Path, experiment_id: str, N: int) -> None:
 
     for roi_id in range(N):
         cell_plots[roi_id] = f"plots/{experiment_id}_{roi_id}_oasis.png"
-    curation = CurationMetric(
-        curations=[json.dumps(cell_plots)]
-    )
+    curation = CurationMetric(curations=[json.dumps(cell_plots)])
     metric = QCMetric(
         name=f"{experiment_id} {roi_id} Event Detection",
         description="",
@@ -133,9 +131,7 @@ def write_qc_metrics(output_dir: Path, experiment_id: str, N: int) -> None:
         ],
         value=curation,
     )
-    with open(
-        output_dir / f"{experiment_id}_events_metric.json", "w"
-    ) as f:
+    with open(output_dir / f"{experiment_id}_events_metric.json", "w") as f:
         json.dump(json.loads(metric.model_dump_json()), f, indent=4)
 
 
@@ -161,6 +157,7 @@ def get_metadata(input_dir: Path, meta_type: str) -> dict:
         metadata = json.load(f)
     return metadata
 
+
 def get_frame_rate(session: dict) -> float:
     """Attempt to pull frame rate from session.json
     Raises ValueError if frame rate not in session.json
@@ -185,6 +182,7 @@ def get_frame_rate(session: dict) -> float:
     if isinstance(frame_rate_hz, str):
         frame_rate_hz = float(frame_rate_hz)
     return frame_rate_hz
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
