@@ -12,7 +12,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 from aind_data_schema.core.processing import DataProcess, ProcessName
-from aind_data_schema.core.quality_control import QCMetric, QCStatus, Status
+from aind_data_schema.core.quality_control import QCMetric, QCStatus, Status, Stage, QCEvaluation
+from aind_data_schema_models.modalities import Modality
 from aind_log_utils.log import setup_logging
 from aind_qcportal_schema.metric_value import CurationMetric, DropdownMetric
 from oasis.functions import deconvolve
@@ -131,8 +132,19 @@ def write_qc_metrics(output_dir: Path, experiment_id: str, N: int) -> None:
         ],
         value=curation,
     )
-    with open(output_dir / f"{experiment_id}_events_metric.json", "w") as f:
-        json.dump(json.loads(metric.model_dump_json()), f, indent=4)
+
+    evaluation = QCEvaluation(
+        modality=Modality.from_abbreviation("pophys"),
+        stage=Stage.PROCESSING,
+        name="Events",
+        description="Events detected in each roi for all fovs",
+        allow_failed_metrics=False,
+        metrics=[metric],
+        tags=["events"],
+    )
+
+    with open(output_dir / f"{experiment_id}_evaluation.json", "w") as f:
+        json.dump(json.loads(evaluation.model_dump_json()), f, indent=4)
 
 
 def get_metadata(input_dir: Path, meta_type: str) -> dict:
