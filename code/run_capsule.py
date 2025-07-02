@@ -12,7 +12,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 from aind_data_schema.core.processing import DataProcess, ProcessName
-from aind_data_schema.core.quality_control import QCMetric, QCStatus, Status, Stage, QCEvaluation
+from aind_data_schema.core.quality_control import (QCEvaluation, QCMetric,
+                                                   QCStatus, Stage, Status)
 from aind_data_schema_models.modalities import Modality
 from aind_log_utils.log import setup_logging
 from aind_qcportal_schema.metric_value import CurationMetric, DropdownMetric
