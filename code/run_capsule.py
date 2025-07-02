@@ -123,9 +123,9 @@ def write_qc_metrics(output_dir: Path, experiment_id: str, N: int) -> None:
         cell_plots[roi_id] = f"plots/{experiment_id}_{roi_id}_oasis.png"
     curation = CurationMetric(curations=[json.dumps(cell_plots)])
     metric = QCMetric(
-        name=f"{experiment_id} {roi_id} Event Detection",
-        description="",
-        reference=str(f"plots/{experiment_id}_{roi_id}_oasis.png"),
+        name=f"{experiment_id} Event Detection",
+        description="dF / F and roi events detected by oasis",
+        reference="",
         status_history=[
             QCStatus(evaluator="Automated", timestamp=dt.now(), status=Status.PASS)
         ],
