@@ -144,7 +144,7 @@ def write_qc_metrics(output_dir: Path, experiment_id: str, N: int) -> None:
         tags=["events"],
     )
 
-    with open(output_dir / f"{experiment_id}_evaluation.json", "w") as f:
+    with open(output_dir / f"{experiment_id}_oasis_events_evaluation.json", "w") as f:
         json.dump(json.loads(evaluation.model_dump_json()), f, indent=4)
 
 
