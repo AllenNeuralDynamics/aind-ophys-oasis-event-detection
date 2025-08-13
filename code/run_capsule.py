@@ -107,7 +107,7 @@ def plot_trace_and_events_png(
         plt.close(fig)
 
 
-def write_qc_metrics(output_dir: Path, experiment_id: str, N: int) -> None:
+def write_qc_evalutation(output_dir: Path, experiment_id: str, N: int) -> None:
     """Writes QC metrics to json files. Creates one json file per ROI.
 
     Parameters
@@ -437,4 +437,4 @@ if __name__ == "__main__":
         end_time=dt.now(),
     )
 
-    write_qc_metrics(output_dir, experiment_id, N)
+    write_qc_evalutation(output_dir, experiment_id, N)
