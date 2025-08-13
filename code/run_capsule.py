@@ -107,7 +107,7 @@ def plot_trace_and_events_png(
         plt.close(fig)
 
 
-def write_qc_metrics(output_dir: Path, experiment_id: str, N: int) -> None:
+def write_qc_evalutation(output_dir: Path, experiment_id: str, N: int) -> None:
     """Writes QC metrics to json files. Creates one json file per ROI.
 
     Parameters
@@ -122,7 +122,7 @@ def write_qc_metrics(output_dir: Path, experiment_id: str, N: int) -> None:
     cell_plots = dict()
 
     for roi_id in range(N):
-        cell_plots[roi_id] = f"plots/{experiment_id}_{roi_id}_oasis.png"
+        cell_plots[roi_id] = f"{experiment_id}/events/plots/{experiment_id}_{roi_id}_oasis.png"
     curation = CurationMetric(curations=[json.dumps(cell_plots)])
     metric = QCMetric(
         name=f"{experiment_id} Event Detection",
@@ -437,4 +437,4 @@ if __name__ == "__main__":
         end_time=dt.now(),
     )
 
-    write_qc_metrics(output_dir, experiment_id, N)
+    write_qc_evalutation(output_dir, experiment_id, N)
