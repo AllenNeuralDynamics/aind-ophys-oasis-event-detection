@@ -120,9 +120,8 @@ def write_qc_evalutation(output_dir: Path, experiment_id: str, N: int) -> None:
         number of ROIs detected
     """
     cell_plots = dict()
-
     for roi_id in range(N):
-        cell_plots[roi_id] = f"{experiment_id}/events/plots/{experiment_id}_{roi_id}_oasis.png"
+        cell_plots[str(roi_id)] = {"reference": f"{experiment_id}/events/plots/{experiment_id}_{roi_id}_oasis.png"}
     curation = CurationMetric(curations=[json.dumps(cell_plots)])
     metric = QCMetric(
         name=f"{experiment_id} Event Detection",
