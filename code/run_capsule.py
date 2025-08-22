@@ -12,11 +12,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 from aind_data_schema.core.processing import DataProcess, ProcessName
-from aind_data_schema.core.quality_control import (QCEvaluation, QCMetric,
-                                                   QCStatus, Stage, Status)
+from aind_data_schema.core.quality_control import (
+    QCEvaluation,
+    QCMetric,
+    QCStatus,
+    Stage,
+    Status,
+)
 from aind_data_schema_models.modalities import Modality
 from aind_log_utils.log import setup_logging
-from aind_qcportal_schema.metric_value import CurationMetric, DropdownMetric
+from aind_qcportal_schema.metric_value import CurationMetric
 from oasis.functions import deconvolve
 from oasis.oasis_methods import oasisAR1, oasisAR1_f32, oasisAR2
 
@@ -121,7 +126,9 @@ def write_qc_evalutation(output_dir: Path, experiment_id: str, N: int) -> None:
     """
     cell_plots = dict()
     for roi_id in range(N):
-        cell_plots[str(roi_id)] = {"reference": f"{experiment_id}/events/plots/{experiment_id}_{roi_id}_oasis.png"}
+        cell_plots[str(roi_id)] = {
+            "reference": f"{experiment_id}/events/plots/{experiment_id}_{roi_id}_oasis.png"
+        }
     curation = CurationMetric(curations=[json.dumps(cell_plots)])
     metric = QCMetric(
         name=f"{experiment_id} Event Detection",
