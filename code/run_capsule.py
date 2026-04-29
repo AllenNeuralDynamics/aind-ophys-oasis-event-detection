@@ -174,14 +174,47 @@ def get_metadata(input_dir: Path, meta_type: str) -> dict:
     return metadata
 
 
-def get_frame_rate(session: dict) -> float:
-    """Attempt to pull frame rate from session.json
-    Raises ValueError if frame rate not in session.json
+def get_acquisition_metadata(input_dir: Path) -> tuple[dict, str]:
+    """Load acquisition.json (aind-data-schema v2) or session.json (v1).
+
+    Tries v2 first and falls back to v1 so users can submit either file.
 
     Parameters
     ----------
-    session: dict
-        session metadata
+    input_dir: Path
+        input directory
+
+    Returns
+    -------
+    metadata: dict
+        parsed json contents
+    version: str
+        "v2" if loaded from acquisition.json, "v1" if loaded from session.json
+    """
+    for filename, version in (("acquisition.json", "v2"), ("session.json", "v1")):
+        try:
+            return get_metadata(input_dir, filename), version
+        except FileNotFoundError:
+            continue
+    raise FileNotFoundError(
+        f"No acquisition.json or session.json file found in {input_dir}"
+    )
+
+
+def get_frame_rate(metadata: dict, version: str) -> float:
+    """Attempt to pull frame rate from session.json (v1) or acquisition.json (v2).
+
+    v1 path: data_streams[i].ophys_fovs[0].frame_rate
+    v2 path: data_streams[i].configurations[j].sampling_strategy.frame_rate
+
+    Raises ValueError if frame rate is not found.
+
+    Parameters
+    ----------
+    metadata: dict
+        session (v1) or acquisition (v2) metadata
+    version: str
+        "v1" or "v2"
 
     Returns
     -------
@@ -189,12 +222,22 @@ def get_frame_rate(session: dict) -> float:
         frame rate in Hz
     """
     frame_rate_hz = None
-    for i in session.get("data_streams", ""):
-        if i.get("ophys_fovs", ""):
-            frame_rate_hz = i["ophys_fovs"][0]["frame_rate"]
-            break
+    if version == "v2":
+        for stream in metadata.get("data_streams", []):
+            for config in stream.get("configurations", []):
+                sampling = config.get("sampling_strategy")
+                if sampling and sampling.get("frame_rate") is not None:
+                    frame_rate_hz = sampling["frame_rate"]
+                    break
+            if frame_rate_hz is not None:
+                break
+    else:
+        for stream in metadata.get("data_streams", []):
+            if stream.get("ophys_fovs"):
+                frame_rate_hz = stream["ophys_fovs"][0]["frame_rate"]
+                break
     if frame_rate_hz is None:
-        raise ValueError("No frame rate found in session.json")
+        raise ValueError(f"No frame rate found in {version} acquisition metadata")
     if isinstance(frame_rate_hz, str):
         frame_rate_hz = float(frame_rate_hz)
     return frame_rate_hz
@@ -287,8 +330,8 @@ if __name__ == "__main__":
     experiment_id = dff_dir.parent.name
     dff_fp = next(dff_dir.glob("*dff.h5"))
     output_dir = make_output_directory(output_dir, experiment_id)
-    session_data = get_metadata(input_dir, "session.json")
-    frame_rate = get_frame_rate(session_data)
+    acquisition_data, schema_version = get_acquisition_metadata(input_dir)
+    frame_rate = get_frame_rate(acquisition_data, schema_version)
     subject_data = get_metadata(input_dir, "subject.json")
     subject_id = subject_data.get("subject_id", "")
     data_description_data = get_metadata(input_dir, "data_description.json")
