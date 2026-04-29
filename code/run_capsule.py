@@ -2,7 +2,7 @@ import argparse
 import json
 import logging
 import os
-from datetime import datetime as dt
+from datetime import datetime as dt, timezone
 from multiprocessing.pool import Pool
 from pathlib import Path
 from typing import Union
@@ -11,17 +11,17 @@ import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-from aind_data_schema.core.processing import DataProcess, ProcessName
+from aind_data_schema.components.identifiers import Code, DataAsset
+from aind_data_schema.components.wrappers import AssetPath
+from aind_data_schema.core.processing import DataProcess, ProcessName, ProcessStage
 from aind_data_schema.core.quality_control import (
-    QCEvaluation,
-    QCMetric,
+    CurationMetric,
     QCStatus,
     Stage,
     Status,
 )
 from aind_data_schema_models.modalities import Modality
 from aind_log_utils.log import setup_logging
-from aind_qcportal_schema.metric_value import CurationMetric
 from oasis.functions import deconvolve
 from oasis.oasis_methods import oasisAR1, oasisAR1_f32, oasisAR2
 
@@ -33,6 +33,7 @@ def write_data_process(
     unique_id: str,
     start_time: dt,
     end_time: dt,
+    experimenters: list[str],
 ) -> None:
     """Writes output metadata to plane processing.json
 
@@ -40,7 +41,7 @@ def write_data_process(
     ----------
     metadata: dict
         parameters from suite2p motion correction
-    raw_movie: str
+    input_fp: str
         path to raw movies
     output_fp: str
         path to motion corrected movies
@@ -50,21 +51,24 @@ def write_data_process(
         start time of processing
     end_time: dt
         end time of processing
+    experimenters: list[str]
+        names of people responsible for processing, pulled from data_description.json
     """
     data_proc = DataProcess(
-        name=ProcessName.FLUORESCENCE_EVENT_DETECTION,
-        software_version=os.getenv("VERSION", ""),
-        start_date_time=start_time.isoformat(),
-        end_date_time=end_time.isoformat(),
-        input_location=str(input_fp),
-        output_location=str(output_fp),
-        code_url=(os.getenv("REPO_URL", "")),
-        parameters=metadata,
+        process_type=ProcessName.FLUORESCENCE_EVENT_DETECTION,
+        stage=ProcessStage.PROCESSING,
+        experimenters=experimenters,
+        code=Code(
+            url=os.getenv("REPO_URL", ""),
+            version=os.getenv("VERSION", ""),
+            parameters=metadata,
+            input_data=[DataAsset(url=str(input_fp))],
+        ),
+        start_date_time=start_time,
+        end_date_time=end_time,
+        output_path=AssetPath(Path(output_fp).as_posix()),
     )
-    if isinstance(output_fp, str):
-        output_dir = Path(output_fp).parent
-    else:
-        output_dir = output_fp.parent
+    output_dir = Path(output_fp).parent
     with open(output_dir / f"{unique_id}_oasis_events_data_process.json", "w") as f:
         json.dump(json.loads(data_proc.model_dump_json()), f, indent=4)
 
@@ -112,8 +116,8 @@ def plot_trace_and_events_png(
         plt.close(fig)
 
 
-def write_qc_evalutation(output_dir: Path, experiment_id: str, N: int) -> None:
-    """Writes QC metrics to json files. Creates one json file per ROI.
+def write_qc_metric(output_dir: Path, experiment_id: str, N: int) -> None:
+    """Writes a curation metric json file with per-ROI event detection plot references.
 
     Parameters
     ----------
@@ -129,29 +133,22 @@ def write_qc_evalutation(output_dir: Path, experiment_id: str, N: int) -> None:
         cell_plots[str(roi_id)] = {
             "reference": f"{experiment_id}/events/plots/{experiment_id}_{roi_id}_oasis.png"
         }
-    curation = CurationMetric(curations=[json.dumps(cell_plots)])
-    metric = QCMetric(
+    metric = CurationMetric(
         name=f"{experiment_id} Event Detection",
-        description="dF / F and roi events detected by oasis",
-        reference="",
-        status_history=[
-            QCStatus(evaluator="Automated", timestamp=dt.now(), status=Status.PASS)
-        ],
-        value=curation,
-    )
-
-    evaluation = QCEvaluation(
         modality=Modality.from_abbreviation("pophys"),
         stage=Stage.PROCESSING,
-        name="Events",
-        description="Events detected in each roi for all fovs",
-        allow_failed_metrics=False,
-        metrics=[metric],
-        tags=["events"],
+        description="dF / F and roi events detected by oasis",
+        status_history=[
+            QCStatus(
+                evaluator="Automated", timestamp=dt.now(timezone.utc), status=Status.PASS
+            )
+        ],
+        value=[json.dumps(cell_plots)],
+        type="events",
     )
 
-    with open(output_dir / f"{experiment_id}_oasis_events_evaluation.json", "w") as f:
-        json.dump(json.loads(evaluation.model_dump_json()), f, indent=4)
+    with open(output_dir / f"{experiment_id}_oasis_events_metric.json", "w") as f:
+        json.dump(json.loads(metric.model_dump_json()), f, indent=4)
 
 
 def get_metadata(input_dir: Path, meta_type: str) -> dict:
@@ -296,6 +293,9 @@ if __name__ == "__main__":
     subject_id = subject_data.get("subject_id", "")
     data_description_data = get_metadata(input_dir, "data_description.json")
     name = data_description_data.get("name", "")
+    experimenters = [
+        inv["name"] for inv in data_description_data.get("investigators", [])
+    ]
     setup_logging(
         "aind-ophys-oasis-event-detection", mouse_id=subject_id, session_name=name
     )
@@ -441,6 +441,7 @@ if __name__ == "__main__":
         experiment_id,
         start_time,
         end_time=dt.now(),
+        experimenters=experimenters,
     )
 
-    write_qc_evalutation(output_dir, experiment_id, N)
+    write_qc_metric(output_dir, experiment_id, N)
