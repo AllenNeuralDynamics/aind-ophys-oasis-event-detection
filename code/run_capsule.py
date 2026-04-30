@@ -24,6 +24,7 @@ from aind_data_schema_models.modalities import Modality
 from aind_log_utils.log import setup_logging
 from oasis.functions import deconvolve
 from oasis.oasis_methods import oasisAR1, oasisAR1_f32, oasisAR2
+from aind_metadta_manager.utils import get_major_schema_version, SchemaVersion, get_acquisition_metadata, get_metadata
 
 
 def write_data_process(
@@ -151,68 +152,8 @@ def write_qc_metric(output_dir: Path, experiment_id: str, N: int) -> None:
         json.dump(json.loads(metric.model_dump_json()), f, indent=4)
 
 
-def get_metadata(input_dir: Path, meta_type: str) -> dict:
-    """Extracts metadata from processing and subject json files
 
-    Parameters
-    ----------
-    input_dir: Path
-        input directory
-    meta_type: str
-        type of metadata to extract
-
-    Returns
-    -------
-    metadata: dict
-        metadata
-    """
-    input_fp = next(input_dir.rglob(f"{meta_type}"), "")
-    if not input_fp:
-        raise FileNotFoundError(f"No {meta_type} file found in {input_dir}")
-    with open(input_fp, "r") as f:
-        metadata = json.load(f)
-    return metadata
-
-
-def get_schema_major_version(data_description: dict) -> str:
-    """Determine aind-data-schema major version from data_description.json.
-
-    Parameters
-    ----------
-    data_description: dict
-        parsed contents of data_description.json
-
-    Returns
-    -------
-    version: str
-        "v2" if schema_version starts with "2.", "v1" otherwise (including missing).
-    """
-    schema_version = data_description.get("schema_version", "") or ""
-    if schema_version.startswith("2."):
-        return "v2"
-    return "v1"
-
-
-def get_acquisition_metadata(input_dir: Path, version: str) -> dict:
-    """Load acquisition.json (aind-data-schema v2) or session.json (v1).
-
-    Parameters
-    ----------
-    input_dir: Path
-        input directory
-    version: str
-        "v2" → load acquisition.json, "v1" → load session.json
-
-    Returns
-    -------
-    metadata: dict
-        parsed json contents
-    """
-    filename = "acquisition.json" if version == "v2" else "session.json"
-    return get_metadata(input_dir, filename)
-
-
-def get_frame_rate(metadata: dict, version: str) -> float:
+def get_frame_rate(metadata: dict, version: SchemaVersion) -> float:
     """Attempt to pull frame rate from session.json (v1) or acquisition.json (v2).
 
     v1 path: data_streams[i].ophys_fovs[0].frame_rate
@@ -224,8 +165,8 @@ def get_frame_rate(metadata: dict, version: str) -> float:
     ----------
     metadata: dict
         session (v1) or acquisition (v2) metadata
-    version: str
-        "v1" or "v2"
+    version: SchemaVersion
+        SchemaVersion.V1 or SchemaVersion.V2
 
     Returns
     -------
@@ -233,7 +174,7 @@ def get_frame_rate(metadata: dict, version: str) -> float:
         frame rate in Hz
     """
     frame_rate_hz = None
-    if version == "v2":
+    if version == SchemaVersion.V2:
         for stream in metadata.get("data_streams", []):
             for config in stream.get("configurations", []):
                 sampling = config.get("sampling_strategy")
@@ -342,7 +283,7 @@ if __name__ == "__main__":
     dff_fp = next(dff_dir.glob("*dff.h5"))
     output_dir = make_output_directory(output_dir, experiment_id)
     data_description_data = get_metadata(input_dir, "data_description.json")
-    schema_version = get_schema_major_version(data_description_data)
+    schema_version = get_major_schema_version(data_description_data)
     acquisition_data = get_acquisition_metadata(input_dir, schema_version)
     frame_rate = get_frame_rate(acquisition_data, schema_version)
     subject_data = get_metadata(input_dir, "subject.json")
