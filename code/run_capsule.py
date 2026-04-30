@@ -174,31 +174,42 @@ def get_metadata(input_dir: Path, meta_type: str) -> dict:
     return metadata
 
 
-def get_acquisition_metadata(input_dir: Path) -> tuple[dict, str]:
-    """Load acquisition.json (aind-data-schema v2) or session.json (v1).
+def get_schema_major_version(data_description: dict) -> str:
+    """Determine aind-data-schema major version from data_description.json.
 
-    Tries v2 first and falls back to v1 so users can submit either file.
+    Parameters
+    ----------
+    data_description: dict
+        parsed contents of data_description.json
+
+    Returns
+    -------
+    version: str
+        "v2" if schema_version starts with "2.", "v1" otherwise (including missing).
+    """
+    schema_version = data_description.get("schema_version", "") or ""
+    if schema_version.startswith("2."):
+        return "v2"
+    return "v1"
+
+
+def get_acquisition_metadata(input_dir: Path, version: str) -> dict:
+    """Load acquisition.json (aind-data-schema v2) or session.json (v1).
 
     Parameters
     ----------
     input_dir: Path
         input directory
+    version: str
+        "v2" → load acquisition.json, "v1" → load session.json
 
     Returns
     -------
     metadata: dict
         parsed json contents
-    version: str
-        "v2" if loaded from acquisition.json, "v1" if loaded from session.json
     """
-    for filename, version in (("acquisition.json", "v2"), ("session.json", "v1")):
-        try:
-            return get_metadata(input_dir, filename), version
-        except FileNotFoundError:
-            continue
-    raise FileNotFoundError(
-        f"No acquisition.json or session.json file found in {input_dir}"
-    )
+    filename = "acquisition.json" if version == "v2" else "session.json"
+    return get_metadata(input_dir, filename)
 
 
 def get_frame_rate(metadata: dict, version: str) -> float:
@@ -330,11 +341,12 @@ if __name__ == "__main__":
     experiment_id = dff_dir.parent.name
     dff_fp = next(dff_dir.glob("*dff.h5"))
     output_dir = make_output_directory(output_dir, experiment_id)
-    acquisition_data, schema_version = get_acquisition_metadata(input_dir)
+    data_description_data = get_metadata(input_dir, "data_description.json")
+    schema_version = get_schema_major_version(data_description_data)
+    acquisition_data = get_acquisition_metadata(input_dir, schema_version)
     frame_rate = get_frame_rate(acquisition_data, schema_version)
     subject_data = get_metadata(input_dir, "subject.json")
     subject_id = subject_data.get("subject_id", "")
-    data_description_data = get_metadata(input_dir, "data_description.json")
     name = data_description_data.get("name", "")
     experimenters = [
         inv["name"] for inv in data_description_data.get("investigators", [])
