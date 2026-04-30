@@ -2,7 +2,8 @@ import argparse
 import json
 import logging
 import os
-from datetime import datetime as dt, timezone
+from datetime import datetime as dt
+from datetime import timezone
 from multiprocessing.pool import Pool
 from pathlib import Path
 from typing import Union
@@ -22,9 +23,14 @@ from aind_data_schema.core.quality_control import (
 )
 from aind_data_schema_models.modalities import Modality
 from aind_log_utils.log import setup_logging
+from aind_metadta_manager.utils import (
+    SchemaVersion,
+    get_acquisition_metadata,
+    get_major_schema_version,
+    get_metadata,
+)
 from oasis.functions import deconvolve
 from oasis.oasis_methods import oasisAR1, oasisAR1_f32, oasisAR2
-from aind_metadta_manager.utils import get_major_schema_version, SchemaVersion, get_acquisition_metadata, get_metadata
 
 
 def write_data_process(
@@ -141,7 +147,9 @@ def write_qc_metric(output_dir: Path, experiment_id: str, N: int) -> None:
         description="dF / F and roi events detected by oasis",
         status_history=[
             QCStatus(
-                evaluator="Automated", timestamp=dt.now(timezone.utc), status=Status.PASS
+                evaluator="Automated",
+                timestamp=dt.now(timezone.utc),
+                status=Status.PASS,
             )
         ],
         value=[json.dumps(cell_plots)],
@@ -150,7 +158,6 @@ def write_qc_metric(output_dir: Path, experiment_id: str, N: int) -> None:
 
     with open(output_dir / f"{experiment_id}_oasis_events_metric.json", "w") as f:
         json.dump(json.loads(metric.model_dump_json()), f, indent=4)
-
 
 
 def get_frame_rate(metadata: dict, version: SchemaVersion) -> float:
