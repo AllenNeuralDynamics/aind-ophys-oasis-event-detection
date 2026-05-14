@@ -22,7 +22,7 @@ from aind_data_schema.core.quality_control import (
     Status,
 )
 from aind_data_schema_models.modalities import Modality
-from aind_log_utils.log import setup_logging
+from logging_util import setup_logging
 from aind_metadta_manager.utils import (
     SchemaVersion,
     get_acquisition_metadata,
@@ -293,14 +293,16 @@ if __name__ == "__main__":
     schema_version = get_major_schema_version(data_description_data)
     acquisition_data = get_acquisition_metadata(input_dir, schema_version)
     frame_rate = get_frame_rate(acquisition_data, schema_version)
-    subject_data = get_metadata(input_dir, "subject.json")
-    subject_id = subject_data.get("subject_id", "")
     name = data_description_data.get("name", "")
     experimenters = [
         inv["name"] for inv in data_description_data.get("investigators", [])
     ]
+    process_name = os.getenv("PROCESS_NAME")
     setup_logging(
-        "aind-ophys-oasis-event-detection", mouse_id=subject_id, session_name=name
+        process_name,
+        acquisition_name=name,
+        process_name=process_name,
+        pipeline_name=os.getenv("PIPELINE_NAME", ""),
     )
     # convert time constants to parameters of the auto-regressive (AR) process
     if args.tau is None or args.tau_rise is None:  # automatically estimate tau
