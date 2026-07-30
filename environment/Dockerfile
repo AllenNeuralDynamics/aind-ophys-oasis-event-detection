@@ -1,9 +1,7 @@
-# hash:sha256:3c09b543c48e44c5101c6214c0ea6b12b9be7764a1be670f4e8152f31acd1e1d
-FROM registry.codeocean.allenneuraldynamics.org/codeocean/jupyterlab:3.4.4-miniconda4.12.0-python3.9-ubuntu20.04
+# hash:sha256:50c28457f4e252204dfff5c996a07c7c86ed488abac08dd74e83bdb0c204258f
+FROM registry.codeocean.allenneuraldynamics.org/codeocean/mambaforge3:24.5.0-0-python3.12.4-ubuntu22.04
 
 ARG DEBIAN_FRONTEND=noninteractive
-ENV PIPELINE_URL="https://codeocean.allenneuraldynamics.org/capsule/5619253/tree"
-ENV PIPELINE_VERSION="1.0"
 ENV VERSION="4.0"
 
 ENV REPO_URL=https://github.com/AllenNeuralDynamics/aind-ophys-oasis-event-detection
@@ -13,7 +11,9 @@ ARG GIT_ACCESS_TOKEN
 COPY git-askpass /
 
 RUN ["apt-get", "update"]
-RUN ["apt-get", "install", "-y", "vim"]
+# build-essential: oasis-deconv 0.2.0 is published as an sdist only (no
+# manylinux wheel) and Cython-compiles oasis_methods at install time.
+RUN ["apt-get", "install", "-y", "vim", "build-essential"]
 
 RUN pip install -U --no-cache-dir \
     h5py==3.9.0 \

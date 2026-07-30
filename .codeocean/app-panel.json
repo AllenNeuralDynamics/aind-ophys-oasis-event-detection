@@ -1,0 +1,142 @@
+{
+	"version": 1,
+	"named_parameters": true,
+	"parameters": [
+		{
+			"id": "0Ts7B6LtPxZ6tv3l",
+			"name": "input_dir",
+			"param_name": "input_dir",
+			"description": "Directory containing the input dF/F traces.",
+			"help_text": "Directory containing the input dF/F traces.",
+			"type": "text",
+			"value_type": "string",
+			"default_value": "../data"
+		},
+		{
+			"id": "Cohpz95NZgZHEX4X",
+			"name": "output_dir",
+			"param_name": "output_dir",
+			"description": "Directory where output files will be saved.",
+			"help_text": "Directory where output files will be saved.",
+			"type": "text",
+			"value_type": "string",
+			"default_value": "../results"
+		},
+		{
+			"id": "rULRfC1Wd5cNqIvx",
+			"name": "estimate_parameters",
+			"param_name": "estimate_parameters",
+			"description": "Whether to estimate parameters, in particular the sparsity parameter lam, using the noise constraint, or to use the parameters provided explicitly.",
+			"help_text": "Whether to estimate parameters, in particular the sparsity parameter lam, using the noise constraint, or to use the parameters provided explicitly.",
+			"type": "text",
+			"value_type": "integer",
+			"default_value": "1"
+		},
+		{
+			"id": "F4LSQdFxgfvhWqOd",
+			"name": "tau",
+			"param_name": "tau",
+			"description": "Exponential decay time in seconds (1/e, thus equal to half-life time divided by ln(2)). Estimated from the autocovariance of the data if no value is given. Has to be provided explicitly if estimate_parameters is False.",
+			"help_text": "Exponential decay time in seconds (1/e, thus equal to half-life time divided by ln(2)). Estimated from the autocovariance of the data if no value is given. Has to be provided explicitly if estimate_parameters is False.",
+			"type": "text",
+			"value_type": "number"
+		},
+		{
+			"id": "a5N9cDD5uwSmLzFC",
+			"name": "tau_rise",
+			"param_name": "tau_rise",
+			"description": "Exponential rise time in seconds (1/e, thus equal to half-rise time divided by ln(2)). Zero selects an AR1 model; any other value selects AR2.",
+			"help_text": "Exponential rise time in seconds (1/e, thus equal to half-rise time divided by ln(2)). Zero selects an AR1 model; any other value selects AR2.",
+			"type": "text",
+			"value_type": "number",
+			"default_value": "0"
+		},
+		{
+			"id": "FWCnajuAWuQ5N04Y",
+			"name": "optimize_tau",
+			"param_name": "optimize_tau",
+			"description": "Number of large, isolated events to consider for further optimizing tau. No optimization if optimize_tau is 0.",
+			"help_text": "Number of large, isolated events to consider for further optimizing tau. No optimization if optimize_tau is 0.",
+			"type": "text",
+			"value_type": "integer",
+			"default_value": "0"
+		},
+		{
+			"id": "98z6QELDdSwdFC1c",
+			"name": "baseline",
+			"param_name": "baseline",
+			"description": "Fluorescence baseline value. If no value is given, the baseline is optimized when estimate_parameters is True, else 0.",
+			"help_text": "Fluorescence baseline value. If no value is given, the baseline is optimized when estimate_parameters is True, else 0.",
+			"type": "text",
+			"value_type": "number"
+		},
+		{
+			"id": "cHzVxn0lxWS9i4Vf",
+			"name": "baseline_nonneg",
+			"param_name": "baseline_nonneg",
+			"description": "Enforce a strictly non-negative baseline if True.",
+			"help_text": "Enforce a strictly non-negative baseline if True.",
+			"type": "text",
+			"value_type": "integer",
+			"default_value": "1"
+		},
+		{
+			"id": "VxpoZ47VbrT09lNK",
+			"name": "sn",
+			"param_name": "sn",
+			"description": "Standard deviation of the noise distribution. If no value is given, sn is estimated from the data based on power spectral density.",
+			"help_text": "Standard deviation of the noise distribution. If no value is given, sn is estimated from the data based on power spectral density.",
+			"type": "text",
+			"value_type": "number"
+		},
+		{
+			"id": "lw3o9BqyFovHyTiI",
+			"name": "penalty",
+			"param_name": "penalty",
+			"description": "Sparsity penalty. 1: min |s|_1, 0: min |s|_0.",
+			"help_text": "Sparsity penalty. 1: min |s|_1, 0: min |s|_0.",
+			"type": "text",
+			"value_type": "integer",
+			"default_value": "1"
+		},
+		{
+			"id": "cBTMFpG6ZkJM5cw6",
+			"name": "lam",
+			"param_name": "lam",
+			"description": "Sparsity penalty parameter. If no value is given, lam is estimated as the optimal Lagrange multiplier for the noise constraint under L1 penalty when estimate_parameters is True, else 0.",
+			"help_text": "Sparsity penalty parameter. If no value is given, lam is estimated as the optimal Lagrange multiplier for the noise constraint under L1 penalty when estimate_parameters is True, else 0.",
+			"type": "text",
+			"value_type": "number"
+		},
+		{
+			"id": "jsJHuE3LowS5rRLH",
+			"name": "s_min",
+			"param_name": "s_min",
+			"description": "Minimal non-zero activity within each bin (minimal spike size).",
+			"help_text": "Minimal non-zero activity within each bin (minimal spike size).",
+			"type": "text",
+			"value_type": "number",
+			"default_value": "0"
+		},
+		{
+			"id": "jzRT9XZnWiLq0gkp",
+			"name": "no_qc",
+			"param_name": "no_qc",
+			"description": "Skip generation of the per-ROI QC plots.",
+			"help_text": "Skip generation of the per-ROI QC plots.",
+			"type": "text",
+			"value_type": "integer",
+			"default_value": "0"
+		},
+		{
+			"id": "hTCQzvhl4Ewdpg6K",
+			"name": "verify",
+			"param_name": "verify",
+			"description": "Round-trip the emitted processing.json and quality_control.json through the core v2 schema objects after writing.",
+			"help_text": "Round-trip the emitted processing.json and quality_control.json through the core v2 schema objects after writing.",
+			"type": "text",
+			"value_type": "integer",
+			"default_value": "0"
+		}
+	]
+}
