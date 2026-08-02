@@ -1,10 +1,15 @@
-# hash:sha256:2a95a68da080d5b700e37d27d52220df75ac69fdd1b25930f9f1f04d6c6fe8ef
+# hash:sha256:e691580dfc29de9e0cfdd1048893ebaaa0635febd3ad8911237014d15e362fdf
 ARG REGISTRY_HOST
 FROM $REGISTRY_HOST/codeocean/mambaforge3:24.5.0-0-python3.12.4-ubuntu22.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG GIT_ASKPASS
 COPY git-ask-pass /
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN --mount=type=secret,id=git-access-token \
     GIT_ACCESS_TOKEN="$(cat /run/secrets/git-access-token)" \

@@ -7,6 +7,14 @@
 		"mount_secrets": true
 	},
 	"installers": {
+		"apt": {
+			"packages": [
+				{
+					"name": "build-essential"
+				}
+			],
+			"install_software_properties_common": true
+		},
 		"pip3": {
 			"packages": [
 				{
