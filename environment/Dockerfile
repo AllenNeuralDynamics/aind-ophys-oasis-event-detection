@@ -8,12 +8,10 @@ ENV VERSION="4.0"
 
 ENV REPO_URL=https://github.com/AllenNeuralDynamics/aind-ophys-oasis-event-detection
 
-ARG GIT_ASKPASS
-ARG GIT_ACCESS_TOKEN
-COPY git-askpass /
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN ["apt-get", "update"]
-RUN ["apt-get", "install", "-y", "vim"]
 
 RUN pip install -U --no-cache-dir \
     h5py==3.9.0 \
@@ -24,3 +22,7 @@ RUN pip install -U --no-cache-dir \
     aind-data-schema==1.2.0 \
     aind-log-utils \
     aind-qcportal-schema
+
+RUN mkdir -p /data /results /scratch /capsule/code
+COPY code/ /capsule/code
+
