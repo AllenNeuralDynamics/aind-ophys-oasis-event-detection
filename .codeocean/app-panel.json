@@ -23,6 +23,15 @@
 			"default_value": "../results"
 		},
 		{
+			"id": "31jKkHThIomv3xbT",
+			"name": "frame_rate",
+			"param_name": "frame_rate",
+			"description": "Acquisition frame rate in Hz, used only when neither the core metadata file nor platform.json supplies one. Event detection cannot convert the decay/rise times into auto-regressive coefficients without a frame rate.",
+			"help_text": "Acquisition frame rate in Hz, used only when neither the core metadata file nor platform.json supplies one. Event detection cannot convert the decay/rise times into auto-regressive coefficients without a frame rate.",
+			"type": "text",
+			"value_type": "number"
+		},
+		{
 			"id": "rULRfC1Wd5cNqIvx",
 			"name": "estimate_parameters",
 			"param_name": "estimate_parameters",
@@ -124,16 +133,6 @@
 			"param_name": "no_qc",
 			"description": "Skip generation of the per-ROI QC plots.",
 			"help_text": "Skip generation of the per-ROI QC plots.",
-			"type": "text",
-			"value_type": "integer",
-			"default_value": "0"
-		},
-		{
-			"id": "hTCQzvhl4Ewdpg6K",
-			"name": "verify",
-			"param_name": "verify",
-			"description": "Round-trip the emitted processing.json and quality_control.json through the core v2 schema objects after writing.",
-			"help_text": "Round-trip the emitted processing.json and quality_control.json through the core v2 schema objects after writing.",
 			"type": "text",
 			"value_type": "integer",
 			"default_value": "0"
