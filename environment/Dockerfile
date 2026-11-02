@@ -1,4 +1,4 @@
-# hash:sha256:a0d448f84d4e63eb8d42af71d459e4717cdacb8ce6fdce28087c71c5f8a75ff4
+# hash:sha256:a15d42bd4d31a04dc26435524cc4dbd025f79a0fa5d65c31676c27938406edec
 ARG REGISTRY_HOST
 FROM $REGISTRY_HOST/codeocean/mambaforge3:24.5.0-0-python3.12.4-ubuntu22.04
 
@@ -14,4 +14,4 @@ RUN apt-get update \
 RUN --mount=type=secret,id=git-access-token \
     GIT_ACCESS_TOKEN="$(cat /run/secrets/git-access-token)" \
     pip3 install -U --no-cache-dir \
-    -e git+https://github.com/AllenNeuralDynamics/aind-ophys-oasis-event-detection-library.git@1ee708c#egg=aind-ophys-oasis-event-detection-library
+    -e git+https://github.com/AllenNeuralDynamics/aind-ophys-oasis-event-detection-library.git@b52bb70#egg=aind-ophys-oasis-event-detection-library

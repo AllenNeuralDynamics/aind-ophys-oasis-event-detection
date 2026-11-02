@@ -19,7 +19,7 @@
 		"pip3": {
 			"packages": [
 				{
-					"name": "git+https://github.com/AllenNeuralDynamics/aind-ophys-oasis-event-detection-library.git@1ee708c#egg=aind-ophys-oasis-event-detection-library"
+					"name": "git+https://github.com/AllenNeuralDynamics/aind-ophys-oasis-event-detection-library.git@b52bb70#egg=aind-ophys-oasis-event-detection-library"
 				}
 			],
 			"options": {},
