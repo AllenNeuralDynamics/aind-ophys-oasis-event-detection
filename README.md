@@ -4,10 +4,15 @@ This capsule uses OASIS to extract neural activity from fluorescence imaging tra
 
 ## Input
 
-All parameters are passed to run_capsule.py using `python run_capsule.py [parameters]`.
-All parameters are defined in __main__ using argparse. The most important one is 'input-dir' 
-which should point to a directory containing file `dff.h5` with the dataset 'data', a 2D array 
-of $\Delta F/F$ traces, and file `processing.json` to obtain the frame rate. 
+All logic lives in the `aind-ophys-oasis-event-detection-library` package; this capsule is a
+thin wrapper. Parameters are defined as a `pydantic-settings` model
+(`OasisSettings` in the library's `settings.py`) and are passed as
+`python run_capsule.py --name=value`, which is the only form a Code Ocean app
+panel emits. The most important one is `--input_dir`, which should point to a
+directory containing `<experiment_id>/dff/<experiment_id>_dff.h5` with the
+dataset `data` (a 2D array of $\Delta F/F$ traces), plus the acquisition
+metadata: `acquisition.json` (aind-data-schema v2) or `session.json` (v1),
+from which the frame rate is read.
 
 ## Output
 

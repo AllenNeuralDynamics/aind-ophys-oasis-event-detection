@@ -1,0 +1,141 @@
+{
+	"version": 1,
+	"named_parameters": true,
+	"parameters": [
+		{
+			"id": "0Ts7B6LtPxZ6tv3l",
+			"name": "input_dir",
+			"param_name": "input_dir",
+			"description": "Directory containing the input dF/F traces.",
+			"help_text": "Directory containing the input dF/F traces.",
+			"type": "text",
+			"value_type": "string",
+			"default_value": "../data"
+		},
+		{
+			"id": "Cohpz95NZgZHEX4X",
+			"name": "output_dir",
+			"param_name": "output_dir",
+			"description": "Directory where output files will be saved.",
+			"help_text": "Directory where output files will be saved.",
+			"type": "text",
+			"value_type": "string",
+			"default_value": "../results"
+		},
+		{
+			"id": "31jKkHThIomv3xbT",
+			"name": "frame_rate",
+			"param_name": "frame_rate",
+			"description": "Frame rate in Hz, used when the metadata provides none.",
+			"help_text": "Frame rate in Hz, used when the metadata provides none.",
+			"type": "text",
+			"value_type": "number"
+		},
+		{
+			"id": "rULRfC1Wd5cNqIvx",
+			"name": "estimate_parameters",
+			"param_name": "estimate_parameters",
+			"description": "Estimate the model parameters, including lam, from the noise constraint; otherwise use the values provided.",
+			"help_text": "Estimate the model parameters, including lam, from the noise constraint; otherwise use the values provided.",
+			"type": "text",
+			"value_type": "integer",
+			"default_value": "1"
+		},
+		{
+			"id": "F4LSQdFxgfvhWqOd",
+			"name": "tau",
+			"param_name": "tau",
+			"description": "Exponential (1/e) decay time in seconds. Estimated from the data when unset; required when estimate_parameters is False.",
+			"help_text": "Exponential (1/e) decay time in seconds. Estimated from the data when unset; required when estimate_parameters is False.",
+			"type": "text",
+			"value_type": "number"
+		},
+		{
+			"id": "a5N9cDD5uwSmLzFC",
+			"name": "tau_rise",
+			"param_name": "tau_rise",
+			"description": "Exponential (1/e) rise time in seconds. 0 selects an AR1 model, any other value AR2.",
+			"help_text": "Exponential (1/e) rise time in seconds. 0 selects an AR1 model, any other value AR2.",
+			"type": "text",
+			"value_type": "number",
+			"default_value": "0"
+		},
+		{
+			"id": "FWCnajuAWuQ5N04Y",
+			"name": "optimize_tau",
+			"param_name": "optimize_tau",
+			"description": "Number of large, isolated events used to refine tau; 0 disables the refinement.",
+			"help_text": "Number of large, isolated events used to refine tau; 0 disables the refinement.",
+			"type": "text",
+			"value_type": "integer",
+			"default_value": "0"
+		},
+		{
+			"id": "98z6QELDdSwdFC1c",
+			"name": "baseline",
+			"param_name": "baseline",
+			"description": "Fluorescence baseline. When unset it is optimized if estimate_parameters is True, else 0.",
+			"help_text": "Fluorescence baseline. When unset it is optimized if estimate_parameters is True, else 0.",
+			"type": "text",
+			"value_type": "number"
+		},
+		{
+			"id": "vmUpQsjv2b12zCxL",
+			"name": "b_nonneg",
+			"param_name": "b_nonneg",
+			"description": "Enforce a strictly non-negative baseline if True.",
+			"help_text": "Enforce a strictly non-negative baseline if True.",
+			"type": "text",
+			"value_type": "integer",
+			"default_value": "1"
+		},
+		{
+			"id": "VxpoZ47VbrT09lNK",
+			"name": "sn",
+			"param_name": "sn",
+			"description": "Noise standard deviation. Estimated from the power spectral density when unset.",
+			"help_text": "Noise standard deviation. Estimated from the power spectral density when unset.",
+			"type": "text",
+			"value_type": "number"
+		},
+		{
+			"id": "lw3o9BqyFovHyTiI",
+			"name": "penalty",
+			"param_name": "penalty",
+			"description": "Sparsity penalty. 1: min |s|_1, 0: min |s|_0.",
+			"help_text": "Sparsity penalty. 1: min |s|_1, 0: min |s|_0.",
+			"type": "text",
+			"value_type": "integer",
+			"default_value": "1"
+		},
+		{
+			"id": "cBTMFpG6ZkJM5cw6",
+			"name": "lam",
+			"param_name": "lam",
+			"description": "Sparsity penalty weight. When unset it is estimated from the noise constraint if estimate_parameters is True, else 0.",
+			"help_text": "Sparsity penalty weight. When unset it is estimated from the noise constraint if estimate_parameters is True, else 0.",
+			"type": "text",
+			"value_type": "number"
+		},
+		{
+			"id": "jsJHuE3LowS5rRLH",
+			"name": "s_min",
+			"param_name": "s_min",
+			"description": "Minimal non-zero activity per bin (minimal spike size).",
+			"help_text": "Minimal non-zero activity per bin (minimal spike size).",
+			"type": "text",
+			"value_type": "number",
+			"default_value": "0"
+		},
+		{
+			"id": "jzRT9XZnWiLq0gkp",
+			"name": "no_qc",
+			"param_name": "no_qc",
+			"description": "Skip generation of the per-ROI QC plots.",
+			"help_text": "Skip generation of the per-ROI QC plots.",
+			"type": "text",
+			"value_type": "integer",
+			"default_value": "0"
+		}
+	]
+}
